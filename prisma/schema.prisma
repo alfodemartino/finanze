@@ -1,0 +1,183 @@
+// Schema del database — Finanze
+// Gestione della divisione delle spese familiari.
+//
+// Gli importi sono sempre salvati in centesimi (Int) per evitare
+// gli errori di arrotondamento dei numeri in virgola mobile.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Autenticazione (modelli richiesti da Auth.js / NextAuth)
+// ---------------------------------------------------------------------------
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  passwordHash  String?
+  createdAt     DateTime  @default(now())
+
+  accounts Account[]
+  sessions Session[]
+  members  Member[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ---------------------------------------------------------------------------
+// Gruppi familiari e membri
+// ---------------------------------------------------------------------------
+
+model Group {
+  id         String   @id @default(cuid())
+  name       String
+  currency   String   @default("EUR")
+  inviteCode String   @unique
+  createdAt  DateTime @default(now())
+
+  members     Member[]
+  expenses    Expense[]
+  settlements Settlement[]
+}
+
+enum MemberRole {
+  OWNER
+  MEMBER
+}
+
+/// Un partecipante alle spese di un gruppo.
+/// `userId` è opzionale: si possono aggiungere familiari senza account
+/// (es. un figlio) che partecipano comunque alla divisione.
+model Member {
+  id          String     @id @default(cuid())
+  groupId     String
+  userId      String?
+  name        String
+  role        MemberRole @default(MEMBER)
+  /// Peso usato dalla ripartizione per quote (es. 60 e 40 per un 60/40).
+  shareWeight Int        @default(100)
+  active      Boolean    @default(true)
+  joinedAt    DateTime   @default(now())
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  expensesPaid       Expense[]      @relation("ExpensePayer")
+  splits             ExpenseSplit[]
+  settlementsSent    Settlement[]   @relation("SettlementFrom")
+  settlementsReceive Settlement[]   @relation("SettlementTo")
+
+  @@unique([groupId, userId])
+  @@index([groupId])
+}
+
+// ---------------------------------------------------------------------------
+// Spese e saldi
+// ---------------------------------------------------------------------------
+
+enum SplitMode {
+  /// Divisione in parti uguali fra i partecipanti selezionati.
+  EQUAL
+  /// Divisione proporzionale al peso (shareWeight) di ogni membro.
+  SHARES
+  /// Importi indicati a mano, uno per partecipante.
+  EXACT
+}
+
+model Expense {
+  id          String    @id @default(cuid())
+  groupId     String
+  description String
+  amountCents Int
+  date        DateTime  @default(now())
+  splitMode   SplitMode @default(EQUAL)
+  payerId     String
+  note        String?
+  createdAt   DateTime  @default(now())
+
+  group  Group          @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  payer  Member         @relation("ExpensePayer", fields: [payerId], references: [id], onDelete: Restrict)
+  splits ExpenseSplit[]
+
+  @@index([groupId, date])
+}
+
+/// Quota di una spesa a carico di un singolo membro.
+/// La somma degli split di una spesa è sempre pari all'importo totale.
+model ExpenseSplit {
+  id          String @id @default(cuid())
+  expenseId   String
+  memberId    String
+  amountCents Int
+
+  expense Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  member  Member  @relation(fields: [memberId], references: [id], onDelete: Restrict)
+
+  @@unique([expenseId, memberId])
+  @@index([memberId])
+}
+
+/// Un rimborso già effettuato fra due membri, che azzera (in tutto o in
+/// parte) un debito calcolato dai saldi.
+model Settlement {
+  id           String   @id @default(cuid())
+  groupId      String
+  fromMemberId String
+  toMemberId   String
+  amountCents  Int
+  date         DateTime @default(now())
+  note         String?
+  createdAt    DateTime @default(now())
+
+  group Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  from  Member @relation("SettlementFrom", fields: [fromMemberId], references: [id], onDelete: Restrict)
+  to    Member @relation("SettlementTo", fields: [toMemberId], references: [id], onDelete: Restrict)
+
+  @@index([groupId, date])
+}
