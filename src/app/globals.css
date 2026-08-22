@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: light dark;
+}
+
+body {
+  @apply bg-slate-50 text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100;
+}
+
+/* Tabelle e blocchi larghi non devono far scorrere la pagina in orizzontale. */
+.scroll-x {
+  @apply -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0;
+}
