@@ -57,6 +57,25 @@ Basta valorizzare `AUTH_GOOGLE_ID` e `AUTH_GOOGLE_SECRET`: il pulsante compare
 da solo nella pagina di accesso. L'URL di callback da registrare su Google è
 `<AUTH_URL>/api/auth/callback/google`.
 
+## Deploy (Vercel + Neon)
+
+L'app gira su Vercel con il database su Neon. Servono due variabili
+d'ambiente nel progetto Vercel:
+
+| Variabile | Valore |
+| --- | --- |
+| `DATABASE_URL` | La stringa **pooled** di Neon (host con `-pooler`), con `?sslmode=require&pgbouncer=true&connect_timeout=15` |
+| `AUTH_SECRET` | Una chiave generata con `npx auth secret` |
+
+`AUTH_URL` non serve: il codice imposta `trustHost: true`, così Auth.js
+accetta l'host che arriva dal proxy di Vercel — produzione, anteprime e
+dominio personalizzato — senza doverli elencare. Senza quell'opzione ogni
+richiesta di login o registrazione fallisce con `UntrustedHost`.
+
+Le migrazioni non girano durante il build: vanno applicate a parte con
+`npm run db:migrate` (o `npx prisma migrate deploy`) puntando alla stringa
+di connessione **diretta** di Neon, quella senza `-pooler`.
+
 ## Comandi utili
 
 | Comando | Cosa fa |

@@ -44,6 +44,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },
   pages: { signIn: "/login" },
+  // Dietro il proxy di Vercel l'host arriva negli header inoltrati: senza
+  // questo Auth.js rifiuta ogni richiesta con UntrustedHost, e login e
+  // registrazione falliscono. Vale per qualunque dominio del progetto
+  // (produzione, anteprime, dominio personalizzato) senza doverlo elencare.
+  trustHost: true,
   providers,
   callbacks: {
     jwt({ token, user }) {
