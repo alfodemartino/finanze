@@ -14,27 +14,39 @@ export function BalanceTable({
   }
 
   return (
-    <div className="scroll-x">
-      <table className="w-full min-w-[32rem] text-sm">
+    // Container query, non media query: quello che conta è la larghezza della
+    // card, non quella dello schermo. Nella pagina Saldi la card sta su due
+    // colonne anche su desktop, e prima le quattro colonne finivano fuori dallo
+    // scorrimento orizzontale portandosi via proprio il saldo.
+    <div className="@container">
+      <table className="w-full text-sm">
         <thead className="text-left text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
           <tr>
             <th className="py-2 pr-3 font-medium">Membro</th>
-            <th className="py-2 pr-3 text-right font-medium">Anticipato</th>
-            <th className="py-2 pr-3 text-right font-medium">A carico</th>
+            <th className="hidden py-2 pr-3 text-right font-medium @lg:table-cell">Anticipato</th>
+            <th className="hidden py-2 pr-3 text-right font-medium @lg:table-cell">A carico</th>
             <th className="py-2 text-right font-medium">Saldo</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
           {balances.map((balance) => (
             <tr key={balance.memberId}>
-              <td className="py-2 pr-3 font-medium">{balance.name}</td>
-              <td className="py-2 pr-3 text-right tabular-nums text-slate-600 dark:text-slate-300">
+              <td className="py-2 pr-3 align-top font-medium">
+                {balance.name}
+                {/* Quando le colonne di dettaglio sono nascoste il dato non si
+                    perde: torna qui sotto, in forma compatta. */}
+                <span className="mt-0.5 block text-xs font-normal tabular-nums text-slate-500 @lg:hidden dark:text-slate-400">
+                  anticipato {formatCents(balance.paidCents, currency)} · a carico{" "}
+                  {formatCents(balance.owedCents, currency)}
+                </span>
+              </td>
+              <td className="hidden py-2 pr-3 text-right align-top tabular-nums text-slate-600 @lg:table-cell dark:text-slate-300">
                 {formatCents(balance.paidCents, currency)}
               </td>
-              <td className="py-2 pr-3 text-right tabular-nums text-slate-600 dark:text-slate-300">
+              <td className="hidden py-2 pr-3 text-right align-top tabular-nums text-slate-600 @lg:table-cell dark:text-slate-300">
                 {formatCents(balance.owedCents, currency)}
               </td>
-              <td className="py-2 text-right">
+              <td className="py-2 text-right align-top whitespace-nowrap">
                 <Money cents={balance.netCents} formatted={formatCents(balance.netCents, currency)} />
               </td>
             </tr>
