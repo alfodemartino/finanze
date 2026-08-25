@@ -1,8 +1,8 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { currentUser } from "@/lib/auth";
 import { loginWithGoogleAction } from "@/app/actions/auth";
 import { LoginForm } from "@/components/forms/LoginForm";
+import { NavLink } from "@/components/NavLink";
 import { SubmitButton } from "@/components/SubmitButton";
 import { Card } from "@/components/ui";
 
@@ -29,9 +29,9 @@ export default async function LoginPage() {
 
       <p className="text-center text-sm text-slate-500 dark:text-slate-400">
         Non hai un account?{" "}
-        <Link href="/registrati" className="font-medium text-emerald-600 hover:underline dark:text-emerald-400">
+        <NavLink href="/registrati" className="font-medium text-emerald-600 hover:underline dark:text-emerald-400">
           Registrati
-        </Link>
+        </NavLink>
       </p>
     </div>
   );

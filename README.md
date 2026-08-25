@@ -26,6 +26,9 @@ necessari a pareggiare i conti.
 - **Tema chiaro o scuro** — l'interfaccia segue le preferenze del sistema, ma
   dall'intestazione si può forzare il tema chiaro o quello scuro: la scelta
   resta salvata sul browser.
+- **Caricamenti visibili** — ogni navigazione e ogni salvataggio accende uno
+  spinner sopra la pagina, così si capisce subito che il clic è stato preso.
+  Compare solo se la risposta tarda: quello che è già pronto resta immediato.
 
 ## Stack
 
@@ -120,6 +123,7 @@ src/lib/groups.ts         Query sul database, con controllo di appartenenza
 src/lib/xlsx.ts           Scrittura dei file xlsx, senza dipendenze esterne
 src/lib/export.ts         Righe dell'export di un gruppo
 src/lib/theme.ts          Tema chiaro/scuro: scelta salvata e script anti-lampeggio
+src/lib/loading.ts        Conteggio delle operazioni in corso e ritardo dello spinner
 src/app/actions/          Server Action (autenticazione, gruppi, spese)
 src/app/gruppi/           Pagine dell'applicazione
 src/components/           Componenti di interfaccia e form
@@ -142,6 +146,12 @@ src/components/           Componenti di interfaccia e form
   è ridefinito con `@custom-variant` in `globals.css`, così vale sia sotto
   `data-theme="dark"` sia — in assenza di una scelta esplicita — con
   `prefers-color-scheme: dark`.
+- **Lo spinner globale conta le operazioni, non le indovina.** `NavLink` riporta
+  `useLinkStatus` (le navigazioni) e `SubmitButton` riporta `useFormStatus` (le
+  server action) allo stesso contatore in `LoadingProvider`: finché è sopra
+  zero, l'overlay copre la pagina. Compare dopo `LOADING_DELAY_MS`, così le
+  risposte rapide non lo fanno lampeggiare. L'unica azione scoperta è l'export
+  in Excel: è un download del browser, che non avvisa quando è finito.
 
 ## Cosa non c'è (ancora)
 

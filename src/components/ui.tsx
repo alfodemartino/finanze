@@ -1,5 +1,5 @@
-import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
+import { NavLink } from "@/components/NavLink";
 
 export function Card({
   title,
@@ -55,8 +55,8 @@ export function ButtonLink({
   variant = "primary",
   className = "",
   ...props
-}: ComponentProps<typeof Link> & { variant?: ButtonVariant }) {
-  return <Link className={buttonClass(variant, className)} {...props} />;
+}: ComponentProps<typeof NavLink> & { variant?: ButtonVariant }) {
+  return <NavLink className={buttonClass(variant, className)} {...props} />;
 }
 
 export function Field({

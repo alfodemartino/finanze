@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { NavLink } from "@/components/NavLink";
 
 const tabs = [
   { segment: "", label: "Riepilogo" },
@@ -22,7 +22,7 @@ export function GroupTabs({ groupId }: { groupId: string }) {
           const active = pathname === href;
           return (
             <li key={tab.label}>
-              <Link
+              <NavLink
                 href={href}
                 aria-current={active ? "page" : undefined}
                 className={`-mb-px inline-block border-b-2 px-4 py-2 text-sm font-medium whitespace-nowrap ${
@@ -32,7 +32,7 @@ export function GroupTabs({ groupId }: { groupId: string }) {
                 }`}
               >
                 {tab.label}
-              </Link>
+              </NavLink>
             </li>
           );
         })}
