@@ -9,7 +9,7 @@ import { themeInitScript } from "@/lib/theme";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Finanze — spese di famiglia",
+  title: "Splitter",
   description: "Registra le spese di casa, calcola i saldi e scopri chi deve dare quanto a chi.",
 };
 
@@ -40,9 +40,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <header className="sticky top-0 z-40 border-b border-separator bg-surface/75 backdrop-blur-xl">
             <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-2.5">
               <NavLink href="/" className="text-[17px] font-semibold tracking-tight">
-                Finanze
+                Splitter
                 <span className="ml-1.5 hidden font-normal text-label-secondary sm:inline">
-                  · spese di famiglia
+                  · divisione spese
                 </span>
               </NavLink>
 
