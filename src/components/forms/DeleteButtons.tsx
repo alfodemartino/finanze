@@ -19,10 +19,10 @@ export function DeleteExpenseButton({ groupId, expenseId }: { groupId: string; e
     >
       <input type="hidden" name="groupId" value={groupId} />
       <input type="hidden" name="expenseId" value={expenseId} />
-      <SubmitButton variant="danger" className="px-2 py-1 text-xs" pendingLabel="Elimino…">
+      <SubmitButton variant="danger" size="sm" pendingLabel="Elimino…">
         Elimina
       </SubmitButton>
-      {state.error && <span className="ml-2 text-xs text-red-600">{state.error}</span>}
+      {state.error && <span className="ml-2 text-[12px] text-negative">{state.error}</span>}
     </form>
   );
 }
@@ -45,10 +45,10 @@ export function DeleteSettlementButton({
     >
       <input type="hidden" name="groupId" value={groupId} />
       <input type="hidden" name="settlementId" value={settlementId} />
-      <SubmitButton variant="danger" className="px-2 py-1 text-xs" pendingLabel="Elimino…">
+      <SubmitButton variant="danger" size="sm" pendingLabel="Elimino…">
         Elimina
       </SubmitButton>
-      {state.error && <span className="ml-2 text-xs text-red-600">{state.error}</span>}
+      {state.error && <span className="ml-2 text-[12px] text-negative">{state.error}</span>}
     </form>
   );
 }

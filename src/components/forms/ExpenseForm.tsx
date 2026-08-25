@@ -122,7 +122,7 @@ export function ExpenseForm({
       </Field>
 
       <fieldset className="space-y-2">
-        <legend className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">
+        <legend className="mb-1.5 block text-[13px] font-medium text-label-secondary">
           Partecipanti
         </legend>
 
@@ -133,20 +133,20 @@ export function ExpenseForm({
           return (
             <div
               key={member.id}
-              className="flex flex-wrap items-center gap-3 rounded-lg border border-slate-200 px-3 py-2 dark:border-slate-800"
+              className="flex flex-wrap items-center gap-3 rounded-control bg-fill px-3.5 py-2.5"
             >
-              <label className="flex flex-1 items-center gap-2 text-sm">
+              <label className="flex flex-1 items-center gap-2.5 text-[15px]">
                 <input
                   type="checkbox"
                   name="participants"
                   value={member.id}
                   checked={checked}
                   onChange={() => toggle(member.id)}
-                  className="size-4 accent-emerald-600"
+                  className="size-[18px] accent-tint"
                 />
                 <span className="font-medium">{member.name}</span>
                 {splitMode === "SHARES" && (
-                  <span className="text-xs text-slate-500 dark:text-slate-400">
+                  <span className="text-[12px] text-label-secondary">
                     quota {member.shareWeight}
                   </span>
                 )}
@@ -167,7 +167,7 @@ export function ExpenseForm({
               )}
 
               {splitMode !== "EXACT" && checked && share && (
-                <span className="text-sm tabular-nums text-slate-500 dark:text-slate-400">
+                <span className="text-[15px] tabular-nums text-label-secondary">
                   {formatCents(share.amountCents, currency)}
                 </span>
               )}
@@ -179,7 +179,7 @@ export function ExpenseForm({
       {preview?.error && <Alert tone="error">{preview.error}</Alert>}
 
       {preview && !preview.error && (
-        <p className="text-sm text-slate-500 dark:text-slate-400">
+        <p className="text-[13px] text-label-secondary">
           Anteprima:{" "}
           {preview.splits
             .map((split) => `${nameById.get(split.memberId)} ${formatCents(split.amountCents, currency)}`)

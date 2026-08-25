@@ -2,17 +2,19 @@
 
 import { useFormStatus } from "react-dom";
 import { useLoadingWhile } from "@/components/LoadingOverlay";
-import { buttonClass, type ButtonVariant } from "@/components/ui";
+import { buttonClass, type ButtonSize, type ButtonVariant } from "@/components/ui";
 
 export function SubmitButton({
   children,
   pendingLabel,
   variant = "primary",
+  size = "md",
   className = "",
 }: {
   children: React.ReactNode;
   pendingLabel?: string;
   variant?: ButtonVariant;
+  size?: ButtonSize;
   className?: string;
 }) {
   const { pending } = useFormStatus();
@@ -22,7 +24,7 @@ export function SubmitButton({
   useLoadingWhile(pending);
 
   return (
-    <button type="submit" disabled={pending} className={buttonClass(variant, className)}>
+    <button type="submit" disabled={pending} className={buttonClass(variant, className, size)}>
       {pending ? (pendingLabel ?? "Attendere…") : children}
     </button>
   );

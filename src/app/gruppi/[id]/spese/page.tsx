@@ -20,7 +20,7 @@ export default async function ExpensesPage({ params }: { params: Promise<{ id: s
   const canManage = group.viewer.role === "OWNER";
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
       <Card title="Nuova spesa">
         <ExpenseForm
           groupId={group.id}
@@ -34,7 +34,7 @@ export default async function ExpensesPage({ params }: { params: Promise<{ id: s
         />
       </Card>
 
-      <Card title="Storico spese" description={`${expenses.length} spese registrate.`}>
+      <Card title="Storico spese" description={`${expenses.length} spese registrate.`} flush>
         <ExpenseList
           expenses={expenses}
           currency={group.currency}

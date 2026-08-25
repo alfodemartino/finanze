@@ -67,15 +67,13 @@ function Overlay({ visible }: { visible: boolean }) {
   return (
     <div
       role="status"
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-slate-900/15 backdrop-blur-[1px] transition-opacity duration-200 motion-reduce:transition-none dark:bg-slate-950/60 ${
+      className={`fixed inset-0 z-50 flex items-center justify-center bg-black/15 backdrop-blur-[2px] transition-opacity duration-200 motion-reduce:transition-none dark:bg-black/50 ${
         visible ? "opacity-100" : "pointer-events-none opacity-0"
       }`}
     >
-      <span className="rounded-2xl bg-white p-4 shadow-lg dark:bg-slate-900">
-        <span
-          aria-hidden
-          className="block size-8 animate-spin rounded-full border-4 border-slate-200 border-t-emerald-600 dark:border-slate-700 dark:border-t-emerald-400"
-        />
+      {/* Il riquadro sfocato che iOS mette sopra la schermata mentre lavora. */}
+      <span className="rounded-2xl bg-surface/85 p-6 shadow-xl backdrop-blur-xl">
+        <span aria-hidden className="ios-spinner block size-8 text-label-secondary" />
       </span>
       {/* Il testo compare solo a overlay acceso: è il cambiamento dentro la
           regione `status` che i lettori di schermo annunciano. */}

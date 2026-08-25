@@ -51,38 +51,40 @@ export function MemberRow({
 
   if (!canManage) {
     return (
-      <li className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm">
+      <li className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-[15px]">
         <span className="font-medium">
           {member.name}
-          {!member.active && <span className="ml-2 text-xs text-slate-400">non attivo</span>}
+          {!member.active && (
+            <span className="ml-2 text-[12px] text-label-tertiary">non attivo</span>
+          )}
         </span>
-        <span className="text-slate-500 dark:text-slate-400">quota {member.shareWeight}</span>
+        <span className="text-label-secondary">quota {member.shareWeight}</span>
       </li>
     );
   }
 
   return (
-    <li className="space-y-2 py-3">
+    <li className="space-y-2 px-4 py-3">
       <form action={updateFormAction} className="flex flex-wrap items-end gap-2">
         <input type="hidden" name="groupId" value={groupId} />
         <input type="hidden" name="memberId" value={member.id} />
 
-        <label className="flex-1 text-sm">
-          <span className="mb-1 block text-xs text-slate-500 dark:text-slate-400">Nome</span>
+        <label className="flex-1">
+          <span className="mb-1 block text-[12px] text-label-secondary">Nome</span>
           <Input name="name" defaultValue={member.name} required maxLength={60} />
         </label>
 
-        <label className="w-24 text-sm">
-          <span className="mb-1 block text-xs text-slate-500 dark:text-slate-400">Quota</span>
+        <label className="w-24">
+          <span className="mb-1 block text-[12px] text-label-secondary">Quota</span>
           <Input name="shareWeight" type="number" min={0} max={1000} defaultValue={member.shareWeight} />
         </label>
 
-        <SubmitButton variant="secondary" pendingLabel="Salvo…">
+        <SubmitButton variant="secondary" size="sm" className="mb-0.5" pendingLabel="Salvo…">
           Salva
         </SubmitButton>
       </form>
 
-      <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+      <div className="flex flex-wrap items-center gap-3 text-[12px] text-label-secondary">
         <span>
           {member.role === "OWNER" ? "amministratore" : "membro"}
           {member.hasAccount ? " · con account" : " · senza account"}
@@ -93,7 +95,7 @@ export function MemberRow({
           <form action={removeFormAction}>
             <input type="hidden" name="groupId" value={groupId} />
             <input type="hidden" name="memberId" value={member.id} />
-            <SubmitButton variant="danger" className="px-2 py-1 text-xs" pendingLabel="Rimuovo…">
+            <SubmitButton variant="danger" size="sm" pendingLabel="Rimuovo…">
               Rimuovi dal gruppo
             </SubmitButton>
           </form>
@@ -112,7 +114,7 @@ export function InviteCodeForm({ groupId }: { groupId: string }) {
   return (
     <form action={formAction} className="space-y-2">
       <input type="hidden" name="groupId" value={groupId} />
-      <SubmitButton variant="ghost" className="px-2 py-1 text-xs" pendingLabel="Genero…">
+      <SubmitButton variant="ghost" size="sm" pendingLabel="Genero…">
         Genera un nuovo codice
       </SubmitButton>
       {state.error && <Alert tone="error">{state.error}</Alert>}

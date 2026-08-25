@@ -23,6 +23,9 @@ necessari a pareggiare i conti.
 - **Export in Excel** — l'amministratore del gruppo scarica un file `.xlsx` con
   tutte le operazioni, spese e rimborsi in ordine di data: per ognuna chi ha
   pagato e a chi. Il foglio porta il nome del gruppo.
+- **Aspetto in stile iOS** — riquadri arrotondati su fondo grigio, barra di
+  navigazione traslucida, controllo segmentato e i colori di sistema di Apple:
+  blu per ciò che si tocca, verde e rosso per crediti e debiti.
 - **Tema chiaro o scuro** — l'interfaccia segue le preferenze del sistema, ma
   dall'intestazione si può forzare il tema chiaro o quello scuro: la scelta
   resta salvata sul browser.
@@ -38,7 +41,7 @@ necessari a pareggiare i conti.
 | Linguaggio | TypeScript |
 | Database | PostgreSQL con Prisma |
 | Autenticazione | Auth.js (NextAuth v5): email + password, Google opzionale |
-| Stile | Tailwind CSS v4 |
+| Stile | Tailwind CSS v4, palette di sistema iOS |
 | Test | Vitest |
 
 ## Avvio in locale

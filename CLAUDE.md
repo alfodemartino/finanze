@@ -57,19 +57,36 @@ passare dal database.
 Tailwind v4, senza file di configurazione: i temi e le varianti si dichiarano
 in `src/app/globals.css`.
 
-Ogni colore chiaro va accompagnato dalla sua variante `dark:`. La verifica
-veloce che non ne manchi nessuna:
+L'aspetto segue le linee guida di iOS: pagina grigia con riquadri arrotondati
+(«inset grouped»), barra di navigazione traslucida, controllo segmentato al
+posto delle schede, blu di sistema per tutto ciò che si tocca, verde e rosso
+solo per il denaro.
+
+I colori si usano **per il ruolo, non per la tinta**: `bg-surface`,
+`text-label-secondary`, `border-separator`, `text-tint`, `text-positive`. Il
+valore lo decide il tema, quindi una utility così **non vuole la variante
+`dark:`**: è già giusta in chiaro e in scuro. Niente colori della tavolozza
+Tailwind (`slate`, `emerald`, …) nei componenti — la verifica veloce:
 
 ```bash
-grep -rn "bg-white\|bg-slate-50\|text-slate-900\|border-slate-200" src --include=*.tsx | grep -v "dark:"
+grep -rn "slate-\|emerald-\|bg-white\|text-black" src --include=*.tsx
 ```
 
-`dark:` è ridefinito con `@custom-variant`: vale sotto `data-theme="dark"` e,
-solo quando l'utente non ha scelto, con `prefers-color-scheme: dark`. La scelta
-del tema sta in `src/lib/theme.ts` e nel componente `ThemeToggle`.
+I token stanno tutti in `globals.css`: le variabili `--ui-*` dichiarano la
+palette nei tre casi (chiaro, scuro di sistema, scuro scelto) e `@theme inline`
+le espone come utility. `inline` non è un dettaglio: senza, Tailwind copierebbe
+il valore e il tema smetterebbe di cambiare.
 
-I componenti condivisi (`Card`, `Field`, `Input`, `Alert`, `Money`, …) stanno in
-`src/components/ui.tsx`: si riusano invece di ricomporre le stesse classi.
+`dark:` resta definito con `@custom-variant` per i pochi casi che non passano da
+un token: vale sotto `data-theme="dark"` e, solo quando l'utente non ha scelto,
+con `prefers-color-scheme: dark`. La scelta del tema sta in `src/lib/theme.ts` e
+nel componente `ThemeToggle`.
+
+I componenti condivisi (`Card`, `Field`, `Input`, `Alert`, `Money`, `Chevron`, …)
+stanno in `src/components/ui.tsx`: si riusano invece di ricomporre le stesse
+classi. La dimensione dei pulsanti è la proprietà `size` (`md`, `sm`), non
+classi di padding passate da fuori: due utility uguali in conflitto le risolve
+l'ordine del foglio di stile, non quello in cui le scrivi.
 
 ## Database
 

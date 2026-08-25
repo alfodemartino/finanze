@@ -20,14 +20,30 @@ export default async function GroupLayout({
   if (!group) notFound();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <NavLink href="/gruppi" className="text-sm text-slate-500 hover:underline dark:text-slate-400">
-            ← Tutti i gruppi
+          {/* Il ritorno indietro di iOS: la freccetta e il nome di dov'eri. */}
+          <NavLink
+            href="/gruppi"
+            className="inline-flex items-center gap-1 text-[15px] text-tint hover:underline"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+              className="size-3.5"
+            >
+              <path d="M15 5l-7 7 7 7" />
+            </svg>
+            Tutti i gruppi
           </NavLink>
-          <h1 className="text-2xl font-bold tracking-tight">{group.name}</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
+          <h1 className="mt-1 text-[28px] font-bold tracking-[-0.02em]">{group.name}</h1>
+          <p className="text-[13px] text-label-secondary">
             {group.members.filter((m) => m.active).length} membri · valuta {group.currency}
           </p>
         </div>

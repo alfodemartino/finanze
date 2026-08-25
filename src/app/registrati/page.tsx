@@ -15,9 +15,9 @@ export default async function RegisterPage() {
         <RegisterForm />
       </Card>
 
-      <p className="text-center text-sm text-slate-500 dark:text-slate-400">
+      <p className="text-center text-[13px] text-label-secondary">
         Hai già un account?{" "}
-        <NavLink href="/login" className="font-medium text-emerald-600 hover:underline dark:text-emerald-400">
+        <NavLink href="/login" className="font-semibold text-tint hover:underline">
           Accedi
         </NavLink>
       </p>

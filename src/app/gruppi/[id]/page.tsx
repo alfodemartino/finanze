@@ -19,12 +19,12 @@ export default async function GroupOverviewPage({ params }: { params: Promise<{ 
   ]);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <Card
         title="Chi deve dare quanto a chi"
         description="Il numero minimo di pagamenti per pareggiare i conti di tutti."
         actions={
-          <ButtonLink href={`/gruppi/${group.id}/saldi`} variant="secondary">
+          <ButtonLink href={`/gruppi/${group.id}/saldi`} variant="secondary" size="sm">
             Registra un rimborso
           </ButtonLink>
         }
@@ -38,8 +38,11 @@ export default async function GroupOverviewPage({ params }: { params: Promise<{ 
 
       <Card
         title="Ultime spese"
+        flush
         actions={
-          <ButtonLink href={`/gruppi/${group.id}/spese`}>Aggiungi una spesa</ButtonLink>
+          <ButtonLink href={`/gruppi/${group.id}/spese`} size="sm">
+            Aggiungi una spesa
+          </ButtonLink>
         }
       >
         <ExpenseList expenses={expenses} currency={group.currency} groupId={group.id} />

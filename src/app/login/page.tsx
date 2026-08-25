@@ -19,7 +19,7 @@ export default async function LoginPage() {
         <LoginForm />
 
         {googleEnabled && (
-          <form action={loginWithGoogleAction} className="mt-4 border-t border-slate-200 pt-4 dark:border-slate-800">
+          <form action={loginWithGoogleAction} className="mt-4 border-t border-separator pt-4">
             <SubmitButton variant="secondary" className="w-full" pendingLabel="Apro Google…">
               Continua con Google
             </SubmitButton>
@@ -27,9 +27,9 @@ export default async function LoginPage() {
         )}
       </Card>
 
-      <p className="text-center text-sm text-slate-500 dark:text-slate-400">
+      <p className="text-center text-[13px] text-label-secondary">
         Non hai un account?{" "}
-        <NavLink href="/registrati" className="font-medium text-emerald-600 hover:underline dark:text-emerald-400">
+        <NavLink href="/registrati" className="font-semibold text-tint hover:underline">
           Registrati
         </NavLink>
       </p>
