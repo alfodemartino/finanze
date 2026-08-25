@@ -29,6 +29,27 @@ export type XlsxColumn = {
  */
 export type XlsxValue = string | number | Date | null;
 
+/** Una cella libera, per i blocchi affiancati alla tabella. */
+export type XlsxCell = {
+  value: XlsxValue;
+  format?: XlsxFormat;
+  /** In grassetto, come le intestazioni della tabella. */
+  bold?: boolean;
+};
+
+/**
+ * Un blocco di celle appoggiato a destra della tabella principale, per i
+ * riepiloghi: righe e colonne proprie, indipendenti da quelle della tabella.
+ */
+export type XlsxSide = {
+  /** Indice della prima colonna occupata (0 = A). */
+  startColumn: number;
+  /** Larghezza di ogni colonna del blocco, dalla prima. */
+  widths: number[];
+  /** Righe di celle, dalla prima riga del foglio. */
+  rows: XlsxCell[][];
+};
+
 // ---------------------------------------------------------------------------
 // Conversioni
 // ---------------------------------------------------------------------------
@@ -232,6 +253,14 @@ const STYLE_TEXT = 0;
 const STYLE_HEADER = 1;
 const STYLE_DATE = 2;
 const STYLE_CURRENCY = 3;
+const STYLE_CURRENCY_BOLD = 4;
+
+/** Lo stile con cui va scritta una cella, fra quelli dichiarati sopra. */
+function styleFor(format: XlsxFormat, bold: boolean): number {
+  if (format === "date") return STYLE_DATE;
+  if (format === "currency") return bold ? STYLE_CURRENCY_BOLD : STYLE_CURRENCY;
+  return bold ? STYLE_HEADER : STYLE_TEXT;
+}
 
 function stylesXml(currency: string): string {
   return `${XML_HEADER}
@@ -241,68 +270,88 @@ function stylesXml(currency: string): string {
 <fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>
 <borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>
 <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
-<cellXfs count="4"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="165" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/></cellXfs>
+<cellXfs count="5"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="165" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="165" fontId="1" fillId="0" borderId="0" xfId="0" applyNumberFormat="1" applyFont="1"/></cellXfs>
 <cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
 </styleSheet>`;
 }
 
 /** Una cella del foglio; le celle vuote si omettono, il formato le ammette. */
-function cellXml(reference: string, value: XlsxValue, format: XlsxFormat): string {
+function cellXml(reference: string, cell: XlsxCell): string {
+  const { value } = cell;
   if (value === null || value === "") return "";
 
+  const format = cell.format ?? "text";
+  const style = styleFor(format, cell.bold ?? false);
+
   if (format === "date" && value instanceof Date) {
-    return `<c r="${reference}" s="${STYLE_DATE}"><v>${toExcelSerial(value)}</v></c>`;
+    return `<c r="${reference}" s="${style}"><v>${toExcelSerial(value)}</v></c>`;
   }
 
   if (format === "currency" && typeof value === "number") {
-    return `<c r="${reference}" s="${STYLE_CURRENCY}"><v>${centsToDecimal(value)}</v></c>`;
+    return `<c r="${reference}" s="${style}"><v>${centsToDecimal(value)}</v></c>`;
   }
 
   if (typeof value === "number") {
-    return `<c r="${reference}" s="${STYLE_TEXT}"><v>${value}</v></c>`;
+    return `<c r="${reference}" s="${style}"><v>${value}</v></c>`;
   }
 
   const text = value instanceof Date ? value.toISOString() : String(value);
-  return `<c r="${reference}" s="${STYLE_TEXT}" t="inlineStr"><is><t xml:space="preserve">${escapeXml(text)}</t></is></c>`;
+  return `<c r="${reference}" s="${style}" t="inlineStr"><is><t xml:space="preserve">${escapeXml(text)}</t></is></c>`;
 }
 
-function sheetXml(columns: XlsxColumn[], rows: XlsxValue[][], reference: string): string {
+function sheetXml({
+  columns,
+  rows,
+  side,
+  tableRef,
+  dimensionRef,
+}: {
+  columns: XlsxColumn[];
+  rows: XlsxValue[][];
+  side?: XlsxSide;
+  tableRef: string;
+  dimensionRef: string;
+}): string {
   // Un `<cols>` senza figli non è ammesso dallo schema: se non ci sono
   // colonne l'elemento va omesso, non lasciato vuoto.
-  const cols = columns
-    .map((column, index) => {
-      const position = `min="${index + 1}" max="${index + 1}"`;
-      return `<col ${position} width="${column.width ?? 14}" customWidth="1"/>`;
-    })
+  const cols = [
+    ...columns.map((column, index) => ({ index, width: column.width ?? 14 })),
+    ...(side?.widths ?? []).map((width, index) => ({ index: side!.startColumn + index, width })),
+  ]
+    .map(({ index, width }) => `<col min="${index + 1}" max="${index + 1}" width="${width}" customWidth="1"/>`)
     .join("");
 
-  const header = columns
-    .map(
-      (column, index) =>
-        `<c r="${columnName(index)}1" s="${STYLE_HEADER}" t="inlineStr"><is><t>${escapeXml(column.header)}</t></is></c>`,
-    )
-    .join("");
+  // Il foglio arriva fin dove arriva la più lunga fra la tabella e il blocco
+  // affiancato: i due possono avere altezze diverse.
+  const lastRow = Math.max(rows.length + 1, side?.rows.length ?? 0);
 
-  const body = rows
-    .map((row, rowIndex) => {
-      const number = rowIndex + 2; // la riga 1 è l'intestazione
-      const cells = columns
-        .map((column, index) =>
-          cellXml(`${columnName(index)}${number}`, row[index] ?? null, column.format ?? "text"),
-        )
-        .join("");
-      return `<row r="${number}">${cells}</row>`;
-    })
-    .join("");
+  const body: string[] = [];
+  for (let number = 1; number <= lastRow; number += 1) {
+    const table = columns.map((column, index) => {
+      const reference = `${columnName(index)}${number}`;
+      return number === 1
+        ? cellXml(reference, { value: column.header, bold: true })
+        : cellXml(reference, { value: rows[number - 2]?.[index] ?? null, format: column.format });
+    });
+
+    const aside = (side?.rows[number - 1] ?? []).map((cell, index) =>
+      cellXml(`${columnName((side as XlsxSide).startColumn + index)}${number}`, cell),
+    );
+
+    const cells = [...table, ...aside].join("");
+    // Le righe del tutto vuote non si scrivono: le lascia il blocco
+    // affiancato per separare una sezione dall'altra.
+    if (cells) body.push(`<row r="${number}">${cells}</row>`);
+  }
 
   return `${XML_HEADER}
 <worksheet xmlns="${MAIN_NS}">
-<dimension ref="${reference}"/>
+<dimension ref="${dimensionRef}"/>
 <sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>
 <sheetFormatPr defaultRowHeight="15"/>
 ${cols ? `<cols>${cols}</cols>` : ""}
-<sheetData><row r="1">${header}</row>${body}</sheetData>
-<autoFilter ref="${reference}"/>
+<sheetData>${body.join("")}</sheetData>
+<autoFilter ref="${tableRef}"/>
 </worksheet>`;
 }
 
@@ -317,7 +366,8 @@ function workbookXml(sheetName: string, reference: string): string {
 }
 
 /**
- * Costruisce un file xlsx con un solo foglio.
+ * Costruisce un file xlsx con un solo foglio: una tabella a partire da A1 e,
+ * se serve, un blocco di riepilogo appoggiato alla sua destra.
  *
  * `sheetName` viene adattato ai vincoli di Excel, così chi chiama può passare
  * direttamente il nome del gruppo.
@@ -326,15 +376,28 @@ export function buildXlsx({
   sheetName,
   columns,
   rows,
+  side,
   currency = "EUR",
 }: {
   sheetName: string;
   columns: XlsxColumn[];
   rows: XlsxValue[][];
+  side?: XlsxSide;
   currency?: string;
 }): Buffer {
   const name = sanitizeSheetName(sheetName);
-  const reference = `A1:${columnName(Math.max(columns.length - 1, 0))}${rows.length + 1}`;
+
+  // Il filtro automatico copre la sola tabella: se comprendesse anche il
+  // riepilogo, filtrare le spese ne nasconderebbe pezzi.
+  const tableRef = `A1:${columnName(Math.max(columns.length - 1, 0))}${rows.length + 1}`;
+
+  const sideWidth = side ? Math.max(0, ...side.rows.map((row) => row.length)) : 0;
+  const lastColumn = Math.max(
+    columns.length - 1,
+    sideWidth > 0 ? side!.startColumn + sideWidth - 1 : 0,
+  );
+  const lastRow = Math.max(rows.length + 1, side?.rows.length ?? 0);
+  const dimensionRef = `A1:${columnName(lastColumn)}${lastRow}`;
 
   return zip([
     {
@@ -355,7 +418,7 @@ export function buildXlsx({
 <Relationship Id="rId1" Type="${DOC_RELS}/officeDocument" Target="xl/workbook.xml"/>
 </Relationships>`,
     },
-    { name: "xl/workbook.xml", content: workbookXml(name, reference) },
+    { name: "xl/workbook.xml", content: workbookXml(name, tableRef) },
     {
       name: "xl/_rels/workbook.xml.rels",
       content: `${XML_HEADER}
@@ -365,6 +428,9 @@ export function buildXlsx({
 </Relationships>`,
     },
     { name: "xl/styles.xml", content: stylesXml(currency) },
-    { name: "xl/worksheets/sheet1.xml", content: sheetXml(columns, rows, reference) },
+    {
+      name: "xl/worksheets/sheet1.xml",
+      content: sheetXml({ columns, rows, side, tableRef, dimensionRef }),
+    },
   ]);
 }

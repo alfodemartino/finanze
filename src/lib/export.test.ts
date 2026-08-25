@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { buildExportRows, exportFileName, type ExportExpense, type ExportSettlement } from "@/lib/export";
+import {
+  buildExportRows,
+  buildSummaryRows,
+  exportFileName,
+  type ExportExpense,
+  type ExportSettlement,
+} from "@/lib/export";
 
 const spesa = (
   date: string,
@@ -105,5 +111,87 @@ describe("exportFileName", () => {
     expect(exportFileName('Casa/Rossi "2026"', new Date("2026-08-25T10:00:00Z"))).toBe(
       "Finanze - Casa Rossi 2026 - 2026-08-25.xlsx",
     );
+  });
+});
+
+describe("buildSummaryRows", () => {
+  const balances = [
+    { name: "Anna", paidCents: 8450, owedCents: 12017, netCents: -4567 },
+    { name: "Bruno", paidCents: 12000, owedCents: 9617, netCents: 2383 },
+    { name: "Carla", paidCents: 6000, owedCents: 4816, netCents: 2184 },
+  ];
+  const debts = [
+    { fromName: "Anna", toName: "Bruno", amountCents: 2383 },
+    { fromName: "Anna", toName: "Carla", amountCents: 2184 },
+  ];
+
+  /** Il testo della prima cella di ogni riga, per leggere lo specchietto. */
+  const etichette = (rows: ReturnType<typeof buildSummaryRows>) =>
+    rows.map((row) => (typeof row[0]?.value === "string" ? row[0].value : ""));
+
+  const riepilogo = buildSummaryRows({
+    balances,
+    debts,
+    totalExpensesCents: 26450,
+    totalSettlementsCents: 1000,
+  });
+
+  it("apre con le tre sezioni chieste", () => {
+    expect(etichette(riepilogo)).toEqual(
+      expect.arrayContaining([
+        "RIEPILOGO",
+        "TOTALE SPESO PER PERSONA",
+        "SOMMA TOTALE",
+        "PAGAMENTI DA EFFETTUARE",
+      ]),
+    );
+  });
+
+  it("dà a ogni persona anticipato, a carico e saldo", () => {
+    const anna = riepilogo.find((row) => row[0]?.value === "Anna");
+
+    expect(anna?.map((cell) => cell.value)).toEqual(["Anna", 8450, 12017, -4567]);
+    // Gli importi restano centesimi interi: la conversione la fa il foglio.
+    expect(anna?.slice(1).every((cell) => cell.format === "currency")).toBe(true);
+  });
+
+  it("tiene separati il totale delle spese e quello dei rimborsi", () => {
+    const spese = riepilogo.find((row) => row[0]?.value === "Totale delle spese");
+    const rimborsi = riepilogo.find((row) => row[0]?.value === "Totale dei rimborsi");
+
+    expect(spese?.[1]?.value).toBe(26450);
+    expect(rimborsi?.[1]?.value).toBe(1000);
+  });
+
+  it("elenca tutti i pagamenti da effettuare", () => {
+    const pagamenti = riepilogo.filter((row) => row[0]?.value === "Anna" && row.length === 3);
+
+    expect(pagamenti.map((row) => row.map((cell) => cell.value))).toEqual([
+      ["Anna", "Bruno", 2383],
+      ["Anna", "Carla", 2184],
+    ]);
+  });
+
+  it("quando i conti sono in pari lo dice invece di lasciare il vuoto", () => {
+    const pari = buildSummaryRows({
+      balances,
+      debts: [],
+      totalExpensesCents: 0,
+      totalSettlementsCents: 0,
+    });
+
+    expect(etichette(pari)).toContain("I conti sono in pari: nessun pagamento.");
+    expect(etichette(pari)).not.toContain("DA");
+  });
+
+  it("regge un gruppo senza membri e senza operazioni", () => {
+    const vuoto = buildSummaryRows({
+      balances: [],
+      debts: [],
+      totalExpensesCents: 0,
+      totalSettlementsCents: 0,
+    });
+
+    expect(etichette(vuoto)).toContain("TOTALE SPESO PER PERSONA");
   });
 });

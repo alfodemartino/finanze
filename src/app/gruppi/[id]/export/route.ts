@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { currentUser } from "@/lib/auth";
-import { getGroupForUser, getGroupOperations } from "@/lib/groups";
+import { getGroupBalances, getGroupForUser, getGroupOperations } from "@/lib/groups";
 import { buildGroupExport, exportFileName } from "@/lib/export";
 
 // Il file si costruisce con lo `zlib` di Node: serve il runtime Node.
@@ -37,12 +37,18 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     });
   }
 
-  const { expenses, settlements } = await getGroupOperations(group.id);
+  const [{ expenses, settlements }, { balances, debts }] = await Promise.all([
+    getGroupOperations(group.id),
+    getGroupBalances(group.id),
+  ]);
+
   const file = buildGroupExport({
     groupName: group.name,
     currency: group.currency,
     expenses,
     settlements,
+    balances,
+    debts,
   });
 
   return new Response(new Uint8Array(file), {

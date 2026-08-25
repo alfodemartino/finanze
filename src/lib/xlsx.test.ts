@@ -90,8 +90,8 @@ describe("buildXlsx", () => {
 
   it("scrive l'intestazione nella prima riga", () => {
     const sheet = archive.get("xl/worksheets/sheet1.xml") ?? "";
-    expect(sheet).toContain('<c r="A1" s="1" t="inlineStr"><is><t>DATA</t></is></c>');
-    expect(sheet).toContain('<c r="C1" s="1" t="inlineStr"><is><t>IMPORTO</t></is></c>');
+    expect(sheet).toContain('<c r="A1" s="1" t="inlineStr"><is><t xml:space="preserve">DATA</t></is></c>');
+    expect(sheet).toContain('<c r="C1" s="1" t="inlineStr"><is><t xml:space="preserve">IMPORTO</t></is></c>');
     expect(sheet).toContain('ref="A1:C3"');
   });
 
@@ -125,6 +125,47 @@ describe("buildXlsx", () => {
 
     const franchi = readZip(buildXlsx({ sheetName: "Casa", currency: "CHF", columns, rows: [] }));
     expect(franchi.get("xl/styles.xml")).toContain("&quot;CHF&quot;");
+  });
+
+  it("appoggia il blocco di riepilogo a destra della tabella", () => {
+    const conRiepilogo = readZip(
+      buildXlsx({
+        sheetName: "Casa",
+        columns,
+        rows: [[new Date("2026-08-25T00:00:00.000Z"), "Cena", 1000]],
+        side: {
+          startColumn: 4, // colonna E: la tabella arriva alla C, la D fa da margine
+          widths: [20, 10],
+          rows: [[{ value: "RIEPILOGO", bold: true }], [], [{ value: "Anna" }, { value: 2500, format: "currency" }]],
+        },
+      }),
+    );
+    const sheet = conRiepilogo.get("xl/worksheets/sheet1.xml") ?? "";
+
+    expect(sheet).toContain('<c r="E1" s="1" t="inlineStr"><is><t xml:space="preserve">RIEPILOGO</t></is></c>');
+    expect(sheet).toContain('<c r="E3" s="0" t="inlineStr"><is><t xml:space="preserve">Anna</t></is></c>');
+    expect(sheet).toContain('<c r="F3" s="3"><v>25.00</v></c>');
+    // Il foglio arriva alla riga 3 anche se la tabella si ferma alla 2.
+    expect(sheet).toContain('<dimension ref="A1:F3"/>');
+    // Il filtro invece copre la sola tabella, altrimenti filtrare le spese
+    // nasconderebbe pezzi del riepilogo.
+    expect(sheet).toContain('<autoFilter ref="A1:C2"/>');
+    // La riga 2 del blocco è vuota e la tabella lì ha dati: la riga esiste.
+    expect(sheet).toContain('<row r="2">');
+    expect(sheet).toContain('<col min="5" max="5" width="20" customWidth="1"/>');
+  });
+
+  it("scrive in grassetto gli importi marcati come tali", () => {
+    const forte = readZip(
+      buildXlsx({
+        sheetName: "Casa",
+        columns,
+        rows: [],
+        side: { startColumn: 4, widths: [20], rows: [[{ value: 999, format: "currency", bold: true }]] },
+      }),
+    );
+
+    expect(forte.get("xl/worksheets/sheet1.xml")).toContain('<c r="E1" s="4"><v>9.99</v></c>');
   });
 
   it("regge un foglio con la sola intestazione", () => {
