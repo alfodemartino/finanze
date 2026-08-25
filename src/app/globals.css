@@ -1,7 +1,32 @@
 @import "tailwindcss";
 
+/*
+ * `dark:` segue le preferenze del sistema, ma la scelta esplicita dell'utente
+ * (attributo `data-theme` su <html>, impostato da ThemeToggle) ha la priorità.
+ * `:where()` non aggiunge specificità: l'ordine delle utility resta quello di Tailwind.
+ */
+@custom-variant dark {
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @slot;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    &:where(html:not([data-theme="light"]), html:not([data-theme="light"]) *) {
+      @slot;
+    }
+  }
+}
+
 :root {
   color-scheme: light dark;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
 }
 
 body {
