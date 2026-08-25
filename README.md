@@ -20,6 +20,9 @@ necessari a pareggiare i conti.
   massimo `n-1` pagamenti per `n` membri.
 - **Rimborsi** — quando qualcuno salda, si registra il pagamento e i saldi si
   aggiornano.
+- **Export in Excel** — l'amministratore del gruppo scarica un file `.xlsx` con
+  tutte le operazioni, spese e rimborsi in ordine di data. Il foglio porta il
+  nome del gruppo.
 - **Tema chiaro o scuro** — l'interfaccia segue le preferenze del sistema, ma
   dall'intestazione si può forzare il tema chiaro o quello scuro: la scelta
   resta salvata sul browser.
@@ -114,6 +117,8 @@ src/lib/money.ts          Importi in centesimi, ripartizione senza resti persi
 src/lib/split.ts          Calcolo delle quote di una spesa
 src/lib/balances.ts       Saldi e semplificazione dei debiti
 src/lib/groups.ts         Query sul database, con controllo di appartenenza
+src/lib/xlsx.ts           Scrittura dei file xlsx, senza dipendenze esterne
+src/lib/export.ts         Righe dell'export di un gruppo
 src/lib/theme.ts          Tema chiaro/scuro: scelta salvata e script anti-lampeggio
 src/app/actions/          Server Action (autenticazione, gruppi, spese)
 src/app/gruppi/           Pagine dell'applicazione

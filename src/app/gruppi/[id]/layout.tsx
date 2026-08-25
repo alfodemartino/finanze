@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { currentUser } from "@/lib/auth";
 import { getGroupForUser } from "@/lib/groups";
 import { GroupTabs } from "@/components/GroupTabs";
+import { buttonClass } from "@/components/ui";
 
 export default async function GroupLayout({
   children,
@@ -30,6 +31,15 @@ export default async function GroupLayout({
             {group.members.filter((m) => m.active).length} membri · valuta {group.currency}
           </p>
         </div>
+
+        {/* L'export è riservato all'amministratore, come il controllo lato
+            server: chi non lo è non vede nemmeno il pulsante. È un <a> e non
+            un <Link> perché il browser deve scaricare un file, non navigare. */}
+        {group.viewer.role === "OWNER" && (
+          <a href={`/gruppi/${group.id}/export`} className={buttonClass("secondary")}>
+            Esporta in Excel
+          </a>
+        )}
       </div>
 
       <GroupTabs groupId={group.id} />
