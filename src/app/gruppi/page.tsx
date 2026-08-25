@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
+import { NavLink } from "@/components/NavLink";
 import { currentUser } from "@/lib/auth";
 import { listGroupsForUser } from "@/lib/groups";
 import { CreateGroupForm, JoinGroupForm } from "@/components/forms/GroupForms";
@@ -27,7 +27,7 @@ export default async function GroupsPage() {
           <ul className="divide-y divide-slate-200 dark:divide-slate-800">
             {groups.map(({ group, role }) => (
               <li key={group.id}>
-                <Link
+                <NavLink
                   href={`/gruppi/${group.id}`}
                   className="-mx-2 flex items-center justify-between rounded-lg px-2 py-3 hover:bg-slate-50 dark:hover:bg-slate-800"
                 >
@@ -45,7 +45,7 @@ export default async function GroupsPage() {
                   <span aria-hidden className="text-slate-400">
                     →
                   </span>
-                </Link>
+                </NavLink>
               </li>
             ))}
           </ul>

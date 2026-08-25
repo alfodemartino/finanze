@@ -1,6 +1,7 @@
 "use client";
 
 import { useFormStatus } from "react-dom";
+import { useLoadingWhile } from "@/components/LoadingOverlay";
 import { buttonClass, type ButtonVariant } from "@/components/ui";
 
 export function SubmitButton({
@@ -15,6 +16,10 @@ export function SubmitButton({
   className?: string;
 }) {
   const { pending } = useFormStatus();
+
+  // Ogni invio accende anche l'overlay globale: il pulsante da solo si nota
+  // poco, soprattutto quando è in fondo a un form lungo.
+  useLoadingWhile(pending);
 
   return (
     <button type="submit" disabled={pending} className={buttonClass(variant, className)}>
