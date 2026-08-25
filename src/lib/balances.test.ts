@@ -50,6 +50,18 @@ describe("computeBalances", () => {
     expect(balances[2].netCents).toBe(-1000);
   });
 
+  it("cambiando il pagatore i saldi si ribaltano, le quote restano", () => {
+    // È quello che succede quando l'amministratore corregge chi ha pagato:
+    // le quote a carico non dipendono dal pagatore, gli anticipi sì.
+    const prima = computeBalances(members, [expense("anna", 3000)]);
+    const dopo = computeBalances(members, [expense("bruno", 3000)]);
+
+    expect(prima.map((b) => b.netCents)).toEqual([2000, -1000, -1000]);
+    expect(dopo.map((b) => b.netCents)).toEqual([-1000, 2000, -1000]);
+    expect(dopo.map((b) => b.owedCents)).toEqual(prima.map((b) => b.owedCents));
+    expect(dopo.reduce((sum, b) => sum + b.netCents, 0)).toBe(0);
+  });
+
   it("ignora membri esterni al gruppo", () => {
     const balances = computeBalances(members, [
       { payerId: "sconosciuto", amountCents: 500, splits: [{ memberId: "anna", amountCents: 500 }] },

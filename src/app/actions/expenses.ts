@@ -85,6 +85,45 @@ export async function createExpenseAction(
   return { success: "Spesa registrata." };
 }
 
+/**
+ * Cambia chi ha anticipato una spesa già registrata.
+ *
+ * Le quote a carico dei partecipanti non dipendono dal pagatore, quindi
+ * restano quelle: a cambiare sono i saldi, che vengono ricalcolati a ogni
+ * lettura da `computeBalances`. Basta quindi invalidare le pagine che li
+ * mostrano.
+ */
+export async function updateExpensePayerAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const groupId = String(formData.get("groupId") ?? "");
+  const expenseId = String(formData.get("expenseId") ?? "");
+
+  const group = await requireMembership(groupId);
+  if (!group) return { error: "Gruppo non trovato." };
+  if (group.viewer.role !== "OWNER") {
+    return { error: "Solo un amministratore può cambiare il pagatore." };
+  }
+
+  const payerId = String(formData.get("payerId") ?? "");
+  const payer = group.members.find((member) => member.id === payerId && member.active);
+  if (!payer) return { error: "Seleziona chi ha pagato." };
+
+  // Come per la cancellazione, il vincolo sul gruppo impedisce di toccare la
+  // spesa di un altro gruppo passando un id arbitrario nel form.
+  const updated = await prisma.expense.updateMany({
+    where: { id: expenseId, groupId },
+    data: { payerId },
+  });
+  if (updated.count === 0) return { error: "Spesa non trovata." };
+
+  revalidatePath(`/gruppi/${groupId}`);
+  revalidatePath(`/gruppi/${groupId}/spese`);
+  revalidatePath(`/gruppi/${groupId}/saldi`);
+  return { success: `Ora la spesa risulta pagata da ${payer.name}.` };
+}
+
 export async function deleteExpenseAction(
   _prev: ActionState,
   formData: FormData,

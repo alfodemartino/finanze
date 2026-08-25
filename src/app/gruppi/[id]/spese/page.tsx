@@ -16,6 +16,9 @@ export default async function ExpensesPage({ params }: { params: Promise<{ id: s
   const activeMembers = group.members.filter((member) => member.active);
   const expenses = await listExpenses(group.id);
 
+  // Solo l'amministratore può correggere il pagatore di una spesa già salvata.
+  const canManage = group.viewer.role === "OWNER";
+
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
       <Card title="Nuova spesa">
@@ -37,6 +40,11 @@ export default async function ExpensesPage({ params }: { params: Promise<{ id: s
           currency={group.currency}
           groupId={group.id}
           deletable
+          payerOptions={
+            canManage
+              ? activeMembers.map((member) => ({ id: member.id, name: member.name }))
+              : undefined
+          }
         />
       </Card>
     </div>
