@@ -59,8 +59,10 @@ da solo nella pagina di accesso. L'URL di callback da registrare su Google è
 
 ## Deploy (Vercel + Neon)
 
-L'app gira su Vercel con il database su Neon. Servono due variabili
-d'ambiente nel progetto Vercel:
+L'app gira su Vercel con il database su Neon, nella regione **AWS
+`eu-central-1` (Francoforte)**: è la più vicina a chi usa l'app, e tenere
+database e utenti nello stesso continente evita che ogni query attraversi
+l'Atlantico. Servono due variabili d'ambiente nel progetto Vercel:
 
 | Variabile | Valore |
 | --- | --- |
@@ -75,6 +77,18 @@ richiesta di login o registrazione fallisce con `UntrustedHost`.
 Le migrazioni non girano durante il build: vanno applicate a parte con
 `npm run db:migrate` (o `npx prisma migrate deploy`) puntando alla stringa
 di connessione **diretta** di Neon, quella senza `-pooler`.
+
+### Spostare il database su un altro progetto Neon
+
+1. `npx prisma migrate deploy` sulla stringa **diretta** del progetto nuovo,
+   per creare tabelle e indici.
+2. Copiare i dati dal vecchio al nuovo (`pg_dump --data-only` → `psql`).
+3. Aggiornare `DATABASE_URL` nel progetto Vercel con la stringa **pooled**
+   del progetto nuovo e rifare il deploy: le variabili d'ambiente vengono
+   lette al build, quindi finché non si ridistribuisce l'app continua a
+   parlare col vecchio database.
+4. Solo dopo aver verificato che l'app funziona, cancellare il vecchio
+   progetto Neon.
 
 ## Comandi utili
 
