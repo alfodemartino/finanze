@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { currentUser } from "@/lib/auth";
 import { getGroupForUser } from "@/lib/groups";
 import { AddMemberForm, InviteCodeForm, MemberRow } from "@/components/forms/MemberForms";
+import { DeleteGroupForm } from "@/components/forms/GroupForms";
 import { Card } from "@/components/ui";
 
 export default async function MembersPage({ params }: { params: Promise<{ id: string }> }) {
@@ -36,7 +37,10 @@ export default async function MembersPage({ params }: { params: Promise<{ id: st
         </ul>
       </Card>
 
-      <div className="space-y-6">
+      {/* `self-start`: le card portano `h-full` per pareggiarsi quando stanno
+          affiancate nella griglia, ma qui sono incolonnate e si allungherebbero
+          ognuna all'altezza dell'intera riga. */}
+      <div className="space-y-6 self-start">
         {canManage && (
           <Card title="Aggiungi un membro">
             <AddMemberForm groupId={group.id} />
@@ -56,6 +60,15 @@ export default async function MembersPage({ params }: { params: Promise<{ id: st
             </div>
           )}
         </Card>
+
+        {canManage && (
+          <Card
+            title="Elimina il gruppo"
+            description="Sparisce tutto: spese, rimborsi, membri e saldi. Non si torna indietro."
+          >
+            <DeleteGroupForm groupId={group.id} groupName={group.name} />
+          </Card>
+        )}
       </div>
     </div>
   );

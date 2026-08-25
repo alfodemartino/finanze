@@ -20,6 +20,9 @@ necessari a pareggiare i conti.
   massimo `n-1` pagamenti per `n` membri.
 - **Rimborsi** — quando qualcuno salda, si registra il pagamento e i saldi si
   aggiornano.
+- **Eliminazione di un gruppo** — solo l'amministratore, e solo dopo aver
+  riscritto il nome del gruppo. Sparisce tutto quello che gli appartiene: spese,
+  quote, rimborsi e membri. Gli account restano.
 - **Export in Excel** — l'amministratore del gruppo scarica un file `.xlsx` con
   tutte le operazioni, spese e rimborsi in ordine di data: per ognuna chi ha
   pagato e a chi. Il foglio porta il nome del gruppo.
@@ -123,6 +126,7 @@ src/lib/money.ts          Importi in centesimi, ripartizione senza resti persi
 src/lib/split.ts          Calcolo delle quote di una spesa
 src/lib/balances.ts       Saldi e semplificazione dei debiti
 src/lib/groups.ts         Query sul database, con controllo di appartenenza
+src/lib/group-cascade.ts  Ordine in cui svuotare le tabelle di un gruppo eliminato
 src/lib/xlsx.ts           Scrittura dei file xlsx, senza dipendenze esterne
 src/lib/export.ts         Righe dell'export di un gruppo
 src/lib/theme.ts          Tema chiaro/scuro: scelta salvata e script anti-lampeggio
@@ -143,6 +147,12 @@ src/components/           Componenti di interfaccia e form
   l'esistenza del gruppo.
 - **I membri non si cancellano se hanno spese**: vengono disattivati, così lo
   storico resta coerente e restano visibili nei saldi finché hanno conti aperti.
+- **Un gruppo eliminato non lascia orfani.** I vincoli verso `Member` sono
+  `RESTRICT` — è quello che protegge la regola qui sopra — quindi la cascata del
+  database da sola non basta: cancellerebbe i membri mentre spese e rimborsi li
+  riferiscono ancora, e si fermerebbe. `deleteGroupCascade` svuota le tabelle
+  nell'ordine dichiarato da `src/lib/group-cascade.ts`, in una sola transazione:
+  o sparisce tutto, o non sparisce niente.
 - **Il tema scelto si applica prima del primo paint.** Uno script inline in
   `<head>` legge `localStorage` e imposta `data-theme` su `<html>`: chi usa il
   tema scuro non vede un lampo di bianco al caricamento. Il `dark:` di Tailwind

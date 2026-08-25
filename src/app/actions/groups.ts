@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { currentUser } from "@/lib/auth";
-import { generateInviteCode, getGroupForUser } from "@/lib/groups";
+import { deleteGroupCascade, generateInviteCode, getGroupForUser } from "@/lib/groups";
 import { groupSchema, inviteCodeSchema, memberSchema } from "@/lib/validation";
 import type { ActionState } from "@/lib/action-state";
 
@@ -230,4 +230,33 @@ export async function regenerateInviteCodeAction(
 
   revalidatePath(`/gruppi/${groupId}/membri`);
   return { success: "Nuovo codice di invito generato." };
+}
+
+/**
+ * Elimina il gruppo e tutto il suo storico. Può farlo solo un amministratore,
+ * e solo dopo aver riscritto il nome del gruppo: è un'operazione che non si
+ * annulla, e un tocco per sbaglio cancellerebbe i conti di tutti.
+ */
+export async function deleteGroupAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await requireUser();
+  const groupId = String(formData.get("groupId") ?? "");
+
+  const group = await requireOwner(groupId, user.id);
+  if (!group) return { error: "Solo un amministratore può eliminare il gruppo." };
+
+  // Il confronto ignora maiuscole e spazi ai bordi: serve a dimostrare che si
+  // sa quale gruppo si sta eliminando, non a fare un dettato.
+  const confirmation = String(formData.get("confirmation") ?? "").trim();
+  if (confirmation.toLowerCase() !== group.name.trim().toLowerCase()) {
+    return { error: `Per confermare, scrivi il nome del gruppo: ${group.name}` };
+  }
+
+  await deleteGroupCascade(groupId);
+
+  revalidatePath("/gruppi");
+  revalidatePath(`/gruppi/${groupId}`, "layout");
+  redirect("/gruppi");
 }
