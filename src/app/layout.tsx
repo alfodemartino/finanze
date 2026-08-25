@@ -3,6 +3,8 @@ import Link from "next/link";
 import { currentUser } from "@/lib/auth";
 import { logoutAction } from "@/app/actions/auth";
 import { SubmitButton } from "@/components/SubmitButton";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { themeInitScript } from "@/lib/theme";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -14,7 +16,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const user = await currentUser();
 
   return (
-    <html lang="it">
+    <html lang="it" suppressHydrationWarning>
+      <head>
+        {/* Applica il tema salvato prima del primo paint, per evitare il lampeggio. */}
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
       <body className="min-h-screen">
         <header className="border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
           <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-3">
@@ -24,6 +30,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             </Link>
 
             <nav className="flex items-center gap-2 text-sm">
+              <ThemeToggle />
               {user ? (
                 <>
                   <Link

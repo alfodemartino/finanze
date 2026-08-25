@@ -20,6 +20,9 @@ necessari a pareggiare i conti.
   massimo `n-1` pagamenti per `n` membri.
 - **Rimborsi** — quando qualcuno salda, si registra il pagamento e i saldi si
   aggiornano.
+- **Tema chiaro o scuro** — l'interfaccia segue le preferenze del sistema, ma
+  dall'intestazione si può forzare il tema chiaro o quello scuro: la scelta
+  resta salvata sul browser.
 
 ## Stack
 
@@ -111,6 +114,7 @@ src/lib/money.ts          Importi in centesimi, ripartizione senza resti persi
 src/lib/split.ts          Calcolo delle quote di una spesa
 src/lib/balances.ts       Saldi e semplificazione dei debiti
 src/lib/groups.ts         Query sul database, con controllo di appartenenza
+src/lib/theme.ts          Tema chiaro/scuro: scelta salvata e script anti-lampeggio
 src/app/actions/          Server Action (autenticazione, gruppi, spese)
 src/app/gruppi/           Pagine dell'applicazione
 src/components/           Componenti di interfaccia e form
@@ -127,6 +131,12 @@ src/components/           Componenti di interfaccia e form
   l'esistenza del gruppo.
 - **I membri non si cancellano se hanno spese**: vengono disattivati, così lo
   storico resta coerente e restano visibili nei saldi finché hanno conti aperti.
+- **Il tema scelto si applica prima del primo paint.** Uno script inline in
+  `<head>` legge `localStorage` e imposta `data-theme` su `<html>`: chi usa il
+  tema scuro non vede un lampo di bianco al caricamento. Il `dark:` di Tailwind
+  è ridefinito con `@custom-variant` in `globals.css`, così vale sia sotto
+  `data-theme="dark"` sia — in assenza di una scelta esplicita — con
+  `prefers-color-scheme: dark`.
 
 ## Cosa non c'è (ancora)
 
