@@ -1,12 +1,19 @@
 import { describe, expect, it } from "vitest";
 import { buildExportRows, exportFileName, type ExportExpense, type ExportSettlement } from "@/lib/export";
 
-const spesa = (date: string, description: string, amountCents: number, note: string | null = null): ExportExpense => ({
+const spesa = (
+  date: string,
+  description: string,
+  amountCents: number,
+  note: string | null = null,
+  fra = ["Anna", "Bruno"],
+): ExportExpense => ({
   date: new Date(date),
   description,
   amountCents,
   note,
   payer: { name: "Anna" },
+  splits: fra.map((name) => ({ member: { name } })),
 });
 
 const rimborso = (date: string, amountCents: number, note: string | null = null): ExportSettlement => ({
@@ -41,14 +48,30 @@ describe("buildExportRows", () => {
     expect(rows.map((row) => row.type)).toEqual(["Spesa", "Rimborso"]);
   });
 
-  it("dice nella descrizione chi ha pagato e chi ha rimborsato chi", () => {
+  it("dice chi ha pagato e per chi", () => {
     const rows = buildExportRows({
-      expenses: [spesa("2026-05-01", "Cena", 6000)],
-      settlements: [rimborso("2026-05-02", 3000)],
+      expenses: [spesa("2026-05-01", "Cena", 6000, null, ["Anna", "Bruno", "Carla"])],
+      settlements: [],
     });
 
-    expect(rows[0].description).toBe("Cena (ha pagato Anna)");
-    expect(rows[1].description).toBe("Bruno → Anna");
+    expect(rows[0].description).toBe("Cena");
+    expect(rows[0].paidBy).toBe("Anna");
+    expect(rows[0].paidTo).toBe("Anna, Bruno, Carla");
+  });
+
+  it("di un rimborso dice chi ha pagato e a chi", () => {
+    const rows = buildExportRows({ expenses: [], settlements: [rimborso("2026-05-02", 3000)] });
+
+    expect(rows[0].paidBy).toBe("Bruno");
+    expect(rows[0].paidTo).toBe("Anna");
+    // Le due colonne dicono già tutto: la descrizione resta vuota.
+    expect(rows[0].description).toBe("");
+  });
+
+  it("su una spesa non divisa con nessuno lascia vuota la colonna", () => {
+    const rows = buildExportRows({ expenses: [spesa("2026-05-01", "Cena", 6000, null, [])], settlements: [] });
+
+    expect(rows[0].paidTo).toBe("");
   });
 
   it("lascia la nota vuota quando non c'è", () => {

@@ -119,6 +119,11 @@ export async function getGroupOperations(groupId: string) {
         amountCents: true,
         note: true,
         payer: { select: { name: true } },
+        // Serve solo chi partecipa alla spesa, non quanto gli tocca.
+        splits: {
+          select: { member: { select: { name: true } } },
+          orderBy: { member: { name: "asc" } },
+        },
       },
       orderBy: [{ date: "asc" }, { createdAt: "asc" }],
     }),

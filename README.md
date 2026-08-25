@@ -21,8 +21,8 @@ necessari a pareggiare i conti.
 - **Rimborsi** — quando qualcuno salda, si registra il pagamento e i saldi si
   aggiornano.
 - **Export in Excel** — l'amministratore del gruppo scarica un file `.xlsx` con
-  tutte le operazioni, spese e rimborsi in ordine di data. Il foglio porta il
-  nome del gruppo.
+  tutte le operazioni, spese e rimborsi in ordine di data: per ognuna chi ha
+  pagato e a chi. Il foglio porta il nome del gruppo.
 - **Tema chiaro o scuro** — l'interfaccia segue le preferenze del sistema, ma
   dall'intestazione si può forzare il tema chiaro o quello scuro: la scelta
   resta salvata sul browser.

@@ -12,8 +12,10 @@ import { buildXlsx, sanitizeSheetName, type XlsxColumn, type XlsxValue } from "@
 export const EXPORT_COLUMNS: XlsxColumn[] = [
   { header: "DATA", width: 12, format: "date" },
   { header: "TIPO OPERAZIONE", width: 18 },
-  { header: "DESCRIZIONE OPERAZIONE", width: 46 },
-  { header: "NOTE", width: 32 },
+  { header: "DESCRIZIONE OPERAZIONE", width: 36 },
+  { header: "PAGATO DA", width: 18 },
+  { header: "PAGATO A", width: 32 },
+  { header: "NOTE", width: 28 },
   { header: "IMPORTO", width: 14, format: "currency" },
 ];
 
@@ -23,6 +25,8 @@ export type ExportExpense = {
   amountCents: number;
   note: string | null;
   payer: { name: string };
+  /** I membri fra cui la spesa è divisa: sono loro a beneficiarne. */
+  splits: { member: { name: string } }[];
 };
 
 export type ExportSettlement = {
@@ -37,6 +41,8 @@ export type ExportRow = {
   date: Date;
   type: "Spesa" | "Rimborso";
   description: string;
+  paidBy: string;
+  paidTo: string;
   note: string;
   amountCents: number;
 };
@@ -58,16 +64,22 @@ export function buildExportRows({
     ...expenses.map((expense): ExportRow => ({
       date: expense.date,
       type: "Spesa",
-      // Chi ha pagato non ha una colonna sua, ma è il dato che rende
-      // leggibile la riga: sta nella descrizione.
-      description: `${expense.description} (ha pagato ${expense.payer.name})`,
+      description: expense.description,
+      paidBy: expense.payer.name,
+      // Una spesa si paga a un negozio, non a un membro: qui vanno le persone
+      // per cui è stata anticipata, cioè quelle fra cui è divisa.
+      paidTo: expense.splits.map((split) => split.member.name).join(", "),
       note: expense.note ?? "",
       amountCents: expense.amountCents,
     })),
     ...settlements.map((settlement): ExportRow => ({
       date: settlement.date,
       type: "Rimborso",
-      description: `${settlement.from.name} → ${settlement.to.name}`,
+      // Un rimborso non ha una descrizione sua nel database, e ripetere qui
+      // i due nomi vorrebbe dire copiare le due colonne che seguono.
+      description: "",
+      paidBy: settlement.from.name,
+      paidTo: settlement.to.name,
       note: settlement.note ?? "",
       amountCents: settlement.amountCents,
     })),
@@ -80,7 +92,7 @@ export function buildExportRows({
 
 /** Le righe nell'ordine delle colonne del foglio. */
 function toCells(row: ExportRow): XlsxValue[] {
-  return [row.date, row.type, row.description, row.note, row.amountCents];
+  return [row.date, row.type, row.description, row.paidBy, row.paidTo, row.note, row.amountCents];
 }
 
 /** Il file xlsx del gruppo: un foglio solo, intitolato al gruppo stesso. */
