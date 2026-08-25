@@ -104,3 +104,41 @@ export async function listSettlements(groupId: string, take = 50) {
     take,
   });
 }
+
+/**
+ * Tutte le operazioni del gruppo, spese e rimborsi, per l'export.
+ * Qui non c'è un `take`: un export parziale sarebbe peggio di nessun export.
+ */
+export async function getGroupOperations(groupId: string) {
+  const [expenses, settlements] = await Promise.all([
+    prisma.expense.findMany({
+      where: { groupId },
+      select: {
+        date: true,
+        description: true,
+        amountCents: true,
+        note: true,
+        payer: { select: { name: true } },
+        // Serve solo chi partecipa alla spesa, non quanto gli tocca.
+        splits: {
+          select: { member: { select: { name: true } } },
+          orderBy: { member: { name: "asc" } },
+        },
+      },
+      orderBy: [{ date: "asc" }, { createdAt: "asc" }],
+    }),
+    prisma.settlement.findMany({
+      where: { groupId },
+      select: {
+        date: true,
+        amountCents: true,
+        note: true,
+        from: { select: { name: true } },
+        to: { select: { name: true } },
+      },
+      orderBy: [{ date: "asc" }, { createdAt: "asc" }],
+    }),
+  ]);
+
+  return { expenses, settlements };
+}
