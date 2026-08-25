@@ -1,5 +1,7 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { computeBalances, simplifyDebts } from "@/lib/balances";
+import { GROUP_CASCADE_ORDER, type GroupTable } from "@/lib/group-cascade";
 
 /** Codice di invito leggibile, senza caratteri ambigui (0/O, 1/I). */
 export function generateInviteCode(length = 7): string {
@@ -141,4 +143,29 @@ export async function getGroupOperations(groupId: string) {
   ]);
 
   return { expenses, settlements };
+}
+
+// ---------------------------------------------------------------------------
+// Eliminazione di un gruppo
+// ---------------------------------------------------------------------------
+
+/**
+ * Elimina un gruppo e tutto ciò che gli appartiene: quote, spese, rimborsi e
+ * membri, nell'ordine dichiarato da `GROUP_CASCADE_ORDER`.
+ *
+ * Le cancellazioni stanno in una sola transazione, così o spariscono tutte o
+ * non ne sparisce nessuna: un'eliminazione a metà lascerebbe spese senza
+ * gruppo, cioè conti che non tornano più a nessuno.
+ */
+export async function deleteGroupCascade(groupId: string) {
+  const svuota: Record<GroupTable, () => Prisma.PrismaPromise<unknown>> = {
+    // Le quote non hanno un `groupId`: si raggiungono dalla spesa.
+    expenseSplit: () => prisma.expenseSplit.deleteMany({ where: { expense: { groupId } } }),
+    expense: () => prisma.expense.deleteMany({ where: { groupId } }),
+    settlement: () => prisma.settlement.deleteMany({ where: { groupId } }),
+    member: () => prisma.member.deleteMany({ where: { groupId } }),
+    group: () => prisma.group.delete({ where: { id: groupId } }),
+  };
+
+  await prisma.$transaction(GROUP_CASCADE_ORDER.map((table) => svuota[table]()));
 }

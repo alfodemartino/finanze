@@ -6,11 +6,10 @@
  * Crea una famiglia con tre membri, qualche spesa e un rimborso, così
  * l'applicazione ha subito qualcosa da mostrare.
  */
-import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { prisma } from "../src/lib/db";
 import { computeSplits } from "../src/lib/split";
-
-const prisma = new PrismaClient();
+import { deleteGroupCascade } from "../src/lib/groups";
 
 const DEMO_EMAIL = "demo@finanze.local";
 const DEMO_PASSWORD = "password123";
@@ -25,7 +24,10 @@ async function main() {
   });
 
   // Si riparte da zero a ogni seed, per avere sempre lo stesso scenario.
-  await prisma.group.deleteMany({ where: { inviteCode: "DEMO123" } });
+  // Serve la cascata ordinata: cancellare il gruppo e basta si scontra con i
+  // vincoli verso `Member`, e dal secondo seed in poi non ripartiva niente.
+  const precedente = await prisma.group.findUnique({ where: { inviteCode: "DEMO123" } });
+  if (precedente) await deleteGroupCascade(precedente.id);
 
   const group = await prisma.group.create({
     data: {

@@ -10,12 +10,15 @@ export function SubmitButton({
   variant = "primary",
   size = "md",
   className = "",
+  disabled = false,
 }: {
   children: React.ReactNode;
   pendingLabel?: string;
   variant?: ButtonVariant;
   size?: ButtonSize;
   className?: string;
+  /** Per i form che pretendono una conferma prima di lasciar premere. */
+  disabled?: boolean;
 }) {
   const { pending } = useFormStatus();
 
@@ -24,7 +27,7 @@ export function SubmitButton({
   useLoadingWhile(pending);
 
   return (
-    <button type="submit" disabled={pending} className={buttonClass(variant, className, size)}>
+    <button type="submit" disabled={pending || disabled} className={buttonClass(variant, className, size)}>
       {pending ? (pendingLabel ?? "Attendere…") : children}
     </button>
   );
