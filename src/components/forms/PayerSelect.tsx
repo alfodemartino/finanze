@@ -46,11 +46,11 @@ export function PayerSelect({
         sul nome più lungo del gruppo, lasciando uno stacco fino alla freccia.
       */}
       <span
-        className={`relative inline-flex items-baseline gap-0.5 rounded border border-transparent px-1 hover:border-slate-300 hover:bg-slate-100 focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/30 dark:hover:border-slate-700 dark:hover:bg-slate-800 ${
+        className={`relative inline-flex items-baseline gap-0.5 rounded-md border border-transparent px-1 hover:bg-fill focus-within:border-tint focus-within:ring-2 focus-within:ring-tint/25 ${
           pending ? "opacity-60" : ""
         }`}
       >
-        <span className="font-medium text-slate-700 dark:text-slate-200">{selectedName}</span>
+        <span className="font-medium text-tint">{selectedName}</span>
         <span aria-hidden className="text-[0.65rem]">
           ▾
         </span>
@@ -75,7 +75,7 @@ export function PayerSelect({
       </span>
 
       {state.error && (
-        <span className="ml-1 text-xs text-red-600 dark:text-red-400">{state.error}</span>
+        <span className="ml-1 text-[12px] text-negative">{state.error}</span>
       )}
     </form>
   );

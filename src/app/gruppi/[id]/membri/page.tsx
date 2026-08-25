@@ -15,9 +15,9 @@ export default async function MembersPage({ params }: { params: Promise<{ id: st
   const canManage = group.viewer.role === "OWNER";
 
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
-      <Card title="Membri del gruppo">
-        <ul className="divide-y divide-slate-200 dark:divide-slate-800">
+    <div className="grid gap-6 lg:grid-cols-2">
+      <Card title="Membri del gruppo" flush>
+        <ul className="divide-y divide-separator">
           {group.members.map((member) => (
             <MemberRow
               key={member.id}
@@ -36,7 +36,7 @@ export default async function MembersPage({ params }: { params: Promise<{ id: st
         </ul>
       </Card>
 
-      <div className="space-y-4">
+      <div className="space-y-6">
         {canManage && (
           <Card title="Aggiungi un membro">
             <AddMemberForm groupId={group.id} />
@@ -47,7 +47,7 @@ export default async function MembersPage({ params }: { params: Promise<{ id: st
           title="Codice di invito"
           description="Chi ha un account può usarlo per entrare nel gruppo da solo."
         >
-          <p className="rounded-lg bg-slate-100 px-4 py-3 text-center text-xl font-semibold tracking-[0.3em] dark:bg-slate-800">
+          <p className="rounded-control bg-fill px-4 py-3 text-center text-xl font-semibold tracking-[0.3em] tabular-nums">
             {group.inviteCode}
           </p>
           {canManage && (

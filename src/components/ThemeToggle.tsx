@@ -62,10 +62,11 @@ export function ThemeToggle() {
   }
 
   return (
+    // Un controllo segmentato in miniatura, come quello delle schede del gruppo.
     <div
       role="group"
       aria-label="Tema"
-      className="inline-flex items-center rounded-lg border border-slate-300 p-0.5 dark:border-slate-700"
+      className="inline-flex items-center gap-0.5 rounded-control bg-fill p-0.5"
     >
       {options.map((option) => {
         const active = theme === option.value;
@@ -76,10 +77,8 @@ export function ThemeToggle() {
             onClick={() => choose(option.value)}
             aria-pressed={active}
             title={option.label}
-            className={`rounded-md p-1.5 transition ${
-              active
-                ? "bg-slate-100 text-emerald-600 dark:bg-slate-800 dark:text-emerald-400"
-                : "text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+            className={`rounded-[7px] p-1.5 transition ${
+              active ? "bg-raised text-label shadow-sm" : "text-label-secondary hover:text-label"
             }`}
           >
             <svg

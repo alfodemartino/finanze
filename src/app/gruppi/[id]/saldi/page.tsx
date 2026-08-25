@@ -27,8 +27,8 @@ export default async function BalancesPage({ params }: { params: Promise<{ id: s
     .map((member) => ({ id: member.id, name: member.name }));
 
   return (
-    <div className="space-y-4">
-      <div className="grid gap-4 lg:grid-cols-2">
+    <div className="space-y-6">
+      <div className="grid gap-6 lg:grid-cols-2">
         <Card
           title="Pagamenti suggeriti"
           description="Ogni riga è un pagamento che avvicina il gruppo al pareggio."
@@ -41,7 +41,7 @@ export default async function BalancesPage({ params }: { params: Promise<{ id: s
         </Card>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-2">
         <Card
           title="Registra un rimborso"
           description="Quando qualcuno salda, segnalo qui: i saldi si aggiornano subito."
@@ -56,24 +56,27 @@ export default async function BalancesPage({ params }: { params: Promise<{ id: s
           />
         </Card>
 
-        <Card title="Rimborsi registrati">
+        <Card title="Rimborsi registrati" flush>
           {settlements.length === 0 ? (
             <EmptyState>Nessun rimborso registrato finora.</EmptyState>
           ) : (
-            <ul className="divide-y divide-slate-200 dark:divide-slate-800">
+            <ul className="divide-y divide-separator">
               {settlements.map((settlement) => (
-                <li key={settlement.id} className="flex flex-wrap items-center justify-between gap-2 py-3">
-                  <span className="text-sm">
+                <li
+                  key={settlement.id}
+                  className="flex flex-wrap items-center justify-between gap-2 px-4 py-3"
+                >
+                  <span className="text-[15px]">
                     <span className="font-medium">{settlement.from.name}</span>
-                    <span className="mx-2 text-slate-400">→</span>
+                    <span className="mx-2 text-label-tertiary">→</span>
                     <span className="font-medium">{settlement.to.name}</span>
-                    <span className="mt-0.5 block text-slate-500 dark:text-slate-400">
+                    <span className="mt-0.5 block text-[13px] text-label-secondary">
                       {new Intl.DateTimeFormat("it-IT", { dateStyle: "medium" }).format(settlement.date)}
                       {settlement.note ? ` · ${settlement.note}` : ""}
                     </span>
                   </span>
                   <span className="flex items-center gap-3">
-                    <span className="font-semibold tabular-nums">
+                    <span className="text-[15px] font-semibold tabular-nums">
                       {formatCents(settlement.amountCents, group.currency)}
                     </span>
                     <DeleteSettlementButton groupId={group.id} settlementId={settlement.id} />

@@ -39,17 +39,17 @@ export function ExpenseList({
   }
 
   return (
-    <ul className="divide-y divide-slate-200 dark:divide-slate-800">
+    <ul className="divide-y divide-separator">
       {expenses.map((expense) => (
-        <li key={expense.id} className="py-3">
+        <li key={expense.id} className="px-4 py-3">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <span className="font-medium">{expense.description}</span>
-            <span className="font-semibold tabular-nums">
+            <span className="text-[17px] font-medium">{expense.description}</span>
+            <span className="text-[17px] font-semibold tabular-nums">
               {formatCents(expense.amountCents, currency)}
             </span>
           </div>
 
-          <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+          <p className="mt-0.5 text-[13px] text-label-secondary">
             {new Intl.DateTimeFormat("it-IT", { dateStyle: "medium" }).format(expense.date)} · ha
             pagato{" "}
             {payerOptions?.length ? (
@@ -66,19 +66,19 @@ export function ExpenseList({
                 }
               />
             ) : (
-              <span className="font-medium">{expense.payer.name}</span>
+              <span className="font-medium text-label">{expense.payer.name}</span>
             )}{" "}
             · {splitModeLabels[expense.splitMode] ?? expense.splitMode}
           </p>
 
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          <p className="mt-1 text-[13px] text-label-secondary">
             {expense.splits
               .map((split) => `${split.member.name} ${formatCents(split.amountCents, currency)}`)
               .join(" · ")}
           </p>
 
           {expense.note && (
-            <p className="mt-1 text-sm text-slate-400 italic">{expense.note}</p>
+            <p className="mt-1 text-[13px] text-label-tertiary italic">{expense.note}</p>
           )}
 
           {deletable && (
