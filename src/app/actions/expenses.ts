@@ -2,7 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { prisma } from "@/lib/db";
+import { avvisaSpesaRegistrata } from "@/lib/mail/notify";
 import { currentUser } from "@/lib/auth";
 import { getGroupForUser } from "@/lib/groups";
 import { parseAmountToCents } from "@/lib/money";
@@ -67,7 +69,7 @@ export async function createExpenseAction(
     throw error;
   }
 
-  await prisma.expense.create({
+  const spesa = await prisma.expense.create({
     data: {
       groupId,
       description,
@@ -78,10 +80,18 @@ export async function createExpenseAction(
       note: String(formData.get("note") ?? "").trim() || null,
       splits: { createMany: { data: splits } },
     },
+    select: { id: true },
   });
 
   revalidatePath(`/gruppi/${groupId}`);
   revalidatePath(`/gruppi/${groupId}/spese`);
+
+  // Le mail partono a risposta già mandata: la spesa è salvata comunque, e chi
+  // la registra non deve aspettare tanti invii quanti sono i membri del
+  // gruppo. Se il servizio di posta è irraggiungibile non se ne accorge
+  // nessuno, che è il comportamento giusto per una notifica.
+  after(() => avvisaSpesaRegistrata(spesa.id, group.viewer.name));
+
   return { success: "Spesa registrata." };
 }
 

@@ -9,6 +9,17 @@ export const registerSchema = credentialsSchema.extend({
   name: z.string().trim().min(1, "Il nome è obbligatorio.").max(60),
 });
 
+/** La password scelta due volte: al reset e al cambio da profilo. */
+export const nuovaPasswordSchema = z
+  .object({
+    password: z.string().min(8, "La password deve avere almeno 8 caratteri."),
+    conferma: z.string(),
+  })
+  .refine((dati) => dati.password === dati.conferma, {
+    message: "Le due password non coincidono.",
+    path: ["conferma"],
+  });
+
 export const groupSchema = z.object({
   name: z.string().trim().min(1, "Dai un nome al gruppo.").max(60),
   currency: z.string().trim().length(3).toUpperCase().default("EUR"),

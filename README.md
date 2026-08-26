@@ -26,6 +26,11 @@ necessari a pareggiare i conti.
 - **Export in Excel** — l'amministratore del gruppo scarica un file `.xlsx` con
   tutte le operazioni, spese e rimborsi in ordine di data: per ognuna chi ha
   pagato e a chi. Il foglio porta il nome del gruppo.
+- **Email** — al benvenuto, per il recupero della password e ogni volta che
+  qualcuno registra una spesa: la notifica arriva a tutti i membri del gruppo
+  che hanno un account, con la quota a carico di chi la riceve.
+- **Password dimenticata** — un collegamento via email, valido un'ora e usabile
+  una volta sola. Dal profilo si cambia la password anche da dentro l'app.
 - **Aspetto in stile iOS** — riquadri arrotondati su fondo grigio, barra di
   navigazione traslucida, controllo segmentato e i colori di sistema di Apple:
   blu per ciò che si tocca, verde e rosso per crediti e debiti.
@@ -44,6 +49,7 @@ necessari a pareggiare i conti.
 | Linguaggio | TypeScript |
 | Database | PostgreSQL con Prisma |
 | Autenticazione | Auth.js (NextAuth v5): email + password, Google opzionale |
+| Email | Brevo, API HTTP transazionale (nessuna dipendenza aggiunta) |
 | Stile | Tailwind CSS v4, palette di sistema iOS |
 | Test | Vitest |
 
@@ -83,6 +89,12 @@ l'Atlantico. Servono due variabili d'ambiente nel progetto Vercel:
 | --- | --- |
 | `DATABASE_URL` | La stringa **pooled** di Neon (host con `-pooler`), con `?sslmode=require&pgbouncer=true&connect_timeout=15` |
 | `AUTH_SECRET` | Una chiave generata con `npx auth secret` |
+
+Per far partire le email servono altre due variabili, `BREVO_API_KEY` e
+`MAIL_FROM` — quest'ultima è l'indirizzo verificato su Brevo da cui si
+spedisce. Se ne manca una l'app funziona lo stesso e si limita a scrivere in
+log che non ha spedito e quale delle due manca: è quello che succede in
+sviluppo, nei test e nel build.
 
 `AUTH_URL` non serve: il codice imposta `trustHost: true`, così Auth.js
 accetta l'host che arriva dal proxy di Vercel — produzione, anteprime e
@@ -131,7 +143,12 @@ src/lib/xlsx.ts           Scrittura dei file xlsx, senza dipendenze esterne
 src/lib/export.ts         Righe dell'export di un gruppo
 src/lib/theme.ts          Tema chiaro/scuro: scelta salvata e script anti-lampeggio
 src/lib/loading.ts        Conteggio delle operazioni in corso e ritardo dello spinner
-src/app/actions/          Server Action (autenticazione, gruppi, spese)
+src/lib/password-reset.ts Regole dei token di recupero: durata, impronta, riuso
+src/lib/app-url.ts        Indirizzo pubblico dell'app, per i link dentro le email
+src/lib/mail/templates.ts Testi delle email (funzioni pure, con i test)
+src/lib/mail/send.ts      L'unico punto che parla con Brevo
+src/lib/mail/notify.ts    Chi riceve cosa: destinatari e quote
+src/app/actions/          Server Action (autenticazione, password, gruppi, spese)
 src/app/gruppi/           Pagine dell'applicazione
 src/components/           Componenti di interfaccia e form
 ```
@@ -159,6 +176,21 @@ src/components/           Componenti di interfaccia e form
   è ridefinito con `@custom-variant` in `globals.css`, così vale sia sotto
   `data-theme="dark"` sia — in assenza di una scelta esplicita — con
   `prefers-color-scheme: dark`.
+- **Le email non fanno mai fallire l'operazione che le provoca.** Partono con
+  `after()` di Next, cioè a risposta già mandata: la spesa è salvata e
+  l'account creato anche se Brevo è irraggiungibile, e chi usa l'app non
+  aspetta il servizio di posta. `inviaMail` non solleva mai: registra l'errore
+  e restituisce `false`.
+- **Del token di recupero, in database c'è solo l'impronta.** Il token vero — 32
+  byte casuali — esiste unicamente nell'URL che riceve l'utente: chi leggesse
+  una copia del database non potrebbe entrare in nessun account. Vale un'ora,
+  si usa una volta sola, e usarne uno chiude tutti gli altri dello stesso
+  utente.
+- **La pagina di recupero risponde sempre allo stesso modo.** È la regola del
+  404 sui gruppi applicata agli account: se dicesse «questa email non risulta»
+  sarebbe un elenco di iscritti a disposizione di chiunque. Una nuova richiesta
+  per lo stesso account viene ignorata per due minuti, così nessuno può
+  riempire la casella di un altro premendo «invia» a ripetizione.
 - **Lo spinner globale conta le operazioni, non le indovina.** `NavLink` riporta
   `useLinkStatus` (le navigazioni) e `SubmitButton` riporta `useFormStatus` (le
   server action) allo stesso contatore in `LoadingProvider`: finché è sopra
