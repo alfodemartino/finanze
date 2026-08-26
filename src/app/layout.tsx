@@ -5,6 +5,7 @@ import { currentUser } from "@/lib/auth";
 import { logoutAction } from "@/app/actions/auth";
 import { SubmitButton } from "@/components/SubmitButton";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { Logo } from "@/components/ui";
 import { themeInitScript } from "@/lib/theme";
 import "./globals.css";
 
@@ -39,10 +40,16 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               capello, non un bordo. */}
           <header className="sticky top-0 z-40 border-b border-separator bg-surface/75 backdrop-blur-xl">
             <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-2.5">
-              <NavLink href="/" className="text-[17px] font-semibold tracking-tight">
-                Splitter
-                <span className="ml-1.5 hidden font-normal text-label-secondary sm:inline">
-                  · divisione spese
+              <NavLink
+                href="/"
+                className="flex items-center gap-2 text-[17px] font-semibold tracking-tight"
+              >
+                <Logo className="text-tint" />
+                <span>
+                  Splitter
+                  <span className="ml-1.5 hidden font-normal text-label-secondary sm:inline">
+                    · divisione spese
+                  </span>
                 </span>
               </NavLink>
 
