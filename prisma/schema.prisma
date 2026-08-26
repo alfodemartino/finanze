@@ -26,9 +26,27 @@ model User {
   passwordHash  String?
   createdAt     DateTime  @default(now())
 
-  accounts Account[]
-  sessions Session[]
-  members  Member[]
+  accounts       Account[]
+  sessions       Session[]
+  members        Member[]
+  passwordResets PasswordResetToken[]
+}
+
+/// Un collegamento per reimpostare la password, spedito via email.
+/// In tabella c'è solo l'impronta SHA-256 del token: quello vero esiste
+/// unicamente nell'URL che riceve l'utente.
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  /// Valorizzato quando il collegamento viene consumato: vale una volta sola.
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model Account {
