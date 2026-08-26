@@ -2,8 +2,8 @@ import NextAuth, { type NextAuthConfig } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import { PrismaAdapter } from "@auth/prisma-adapter";
-import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db";
+import { verifyPassword } from "@/lib/password";
 import { credentialsSchema } from "@/lib/validation";
 
 const providers: NextAuthConfig["providers"] = [
@@ -21,7 +21,7 @@ const providers: NextAuthConfig["providers"] = [
       const user = await prisma.user.findUnique({ where: { email } });
       if (!user?.passwordHash) return null;
 
-      const valid = await bcrypt.compare(password, user.passwordHash);
+      const valid = await verifyPassword(password, user.passwordHash);
       if (!valid) return null;
 
       return { id: user.id, name: user.name, email: user.email, image: user.image };

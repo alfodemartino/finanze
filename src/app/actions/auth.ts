@@ -2,8 +2,8 @@
 
 import { AuthError } from "next-auth";
 import { redirect } from "next/navigation";
-import bcrypt from "bcryptjs";
 import { signIn, signOut } from "@/lib/auth";
+import { hashPassword } from "@/lib/password";
 import { prisma } from "@/lib/db";
 import { registerSchema } from "@/lib/validation";
 import type { ActionState } from "@/lib/action-state";
@@ -29,7 +29,7 @@ export async function registerAction(
     return { error: "Esiste già un account con questa email." };
   }
 
-  const passwordHash = await bcrypt.hash(password, 12);
+  const passwordHash = await hashPassword(password);
   await prisma.user.create({ data: { name, email, passwordHash } });
 
   await signIn("credentials", { email, password, redirectTo: "/gruppi" });
