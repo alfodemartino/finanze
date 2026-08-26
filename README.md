@@ -90,9 +90,11 @@ l'Atlantico. Servono due variabili d'ambiente nel progetto Vercel:
 | `DATABASE_URL` | La stringa **pooled** di Neon (host con `-pooler`), con `?sslmode=require&pgbouncer=true&connect_timeout=15` |
 | `AUTH_SECRET` | Una chiave generata con `npx auth secret` |
 
-Per far partire le email serve anche `BREVO_API_KEY`. Senza, l'app funziona
-lo stesso e si limita a scrivere in log che non ha spedito: è quello che
-succede in sviluppo, nei test e nel build.
+Per far partire le email servono altre due variabili, `BREVO_API_KEY` e
+`MAIL_FROM` — quest'ultima è l'indirizzo verificato su Brevo da cui si
+spedisce. Se ne manca una l'app funziona lo stesso e si limita a scrivere in
+log che non ha spedito e quale delle due manca: è quello che succede in
+sviluppo, nei test e nel build.
 
 `AUTH_URL` non serve: il codice imposta `trustHost: true`, così Auth.js
 accetta l'host che arriva dal proxy di Vercel — produzione, anteprime e

@@ -11,11 +11,9 @@ import type { Messaggio } from "@/lib/mail/templates";
 const ENDPOINT = "https://api.brevo.com/v3/smtp/email";
 
 /**
- * Il mittente verificato su Brevo. È un indirizzo su webmail gratuita, quindi
- * Brevo lo sostituisce con un proprio dominio per rispettare le regole di
- * Gmail e Microsoft: resta come `reply-to`, così le risposte arrivano davvero.
+ * Il nome che si legge accanto al mittente. Questo sì che ha un valore
+ * predefinito: non è un dato di nessuno, è il nome dell'applicazione.
  */
-const MITTENTE = process.env.MAIL_FROM?.trim() || "oronzo1981@gmail.com";
 const NOME_MITTENTE = process.env.MAIL_FROM_NAME?.trim() || "Splitter";
 
 /**
@@ -35,13 +33,20 @@ export type Destinatario = { email: string; nome?: string | null };
  * creato, una spesa salvata — e nessuna di quelle deve fallire perché il
  * servizio di posta è irraggiungibile.
  *
- * Senza `BREVO_API_KEY` non fa nulla e lo dice: è quello che succede nei test,
- * durante il build e in sviluppo, dove una chiave vera non c'è.
+ * Senza `BREVO_API_KEY` o senza `MAIL_FROM` non fa nulla e dice quale delle due
+ * manca: è quello che succede nei test, durante il build e in sviluppo, dove
+ * né la chiave né un mittente verificato esistono.
  */
 export async function inviaMail(a: Destinatario, messaggio: Messaggio): Promise<boolean> {
   const chiave = process.env.BREVO_API_KEY?.trim();
-  if (!chiave) {
-    console.info(`[mail] nessuna BREVO_API_KEY: non spedisco "${messaggio.oggetto}" a ${a.email}`);
+  // Il mittente non ha un valore predefinito di proposito: dev'essere un
+  // indirizzo verificato su Brevo, cioè un dato di chi ospita l'applicazione,
+  // e quelli stanno nell'ambiente, non nel codice.
+  const mittente = process.env.MAIL_FROM?.trim();
+
+  if (!chiave || !mittente) {
+    const manca = !chiave ? "BREVO_API_KEY" : "MAIL_FROM";
+    console.info(`[mail] manca ${manca}: non spedisco "${messaggio.oggetto}" a ${a.email}`);
     return false;
   }
 
@@ -54,8 +59,12 @@ export async function inviaMail(a: Destinatario, messaggio: Messaggio): Promise<
         accept: "application/json",
       },
       body: JSON.stringify({
-        sender: { name: NOME_MITTENTE, email: MITTENTE },
-        replyTo: { name: NOME_MITTENTE, email: MITTENTE },
+        sender: { name: NOME_MITTENTE, email: mittente },
+        // Brevo sostituisce i mittenti su webmail gratuita con un proprio
+        // dominio, per rispettare le regole di Gmail e Microsoft. Il
+        // `reply-to` no: senza, rispondere a una di queste mail non
+        // porterebbe da nessuna parte.
+        replyTo: { name: NOME_MITTENTE, email: mittente },
         to: [{ email: a.email, name: a.nome?.trim() || undefined }],
         subject: messaggio.oggetto,
         htmlContent: messaggio.html,
