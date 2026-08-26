@@ -6,7 +6,7 @@
  * Crea una famiglia con tre membri, qualche spesa e un rimborso, così
  * l'applicazione ha subito qualcosa da mostrare.
  */
-import bcrypt from "bcryptjs";
+import { hashPassword } from "../src/lib/password";
 import { prisma } from "../src/lib/db";
 import { computeSplits } from "../src/lib/split";
 import { deleteGroupCascade } from "../src/lib/groups";
@@ -15,7 +15,7 @@ const DEMO_EMAIL = "demo@finanze.local";
 const DEMO_PASSWORD = "password123";
 
 async function main() {
-  const passwordHash = await bcrypt.hash(DEMO_PASSWORD, 10);
+  const passwordHash = await hashPassword(DEMO_PASSWORD);
 
   const user = await prisma.user.upsert({
     where: { email: DEMO_EMAIL },
