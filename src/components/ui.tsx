@@ -158,6 +158,39 @@ export function Chevron({ className = "" }: { className?: string }) {
   );
 }
 
+/**
+ * Il simbolo dell'app: un euro che una fessura diagonale divide in due, cioè la
+ * spesa divisa. Il tratto è `currentColor`, così prende il colore di chi lo
+ * contiene ed è giusto sia in chiaro sia in scuro.
+ *
+ * La fessura separa le due metà senza scostarle: il simbolo resta un euro anche
+ * quando è piccolo. Il bianco e il nero della maschera non sono colori che si
+ * vedono — dicono solo cosa resta e cosa viene tolto — quindi non passano dai
+ * token del tema. Il riquadro arrotondato per la scheda del browser è invece in
+ * `src/app/icon.svg`.
+ */
+export function Logo({ className = "" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 64 64" aria-hidden="true" className={`size-6 shrink-0 ${className}`}>
+      <mask id="logo-fessura" maskUnits="userSpaceOnUse" x="0" y="0" width="64" height="64">
+        <rect width="64" height="64" fill="#fff" />
+        <path d="M28.6-6 40.6 70 37 70 25-6Z" fill="#000" />
+      </mask>
+      <g
+        mask="url(#logo-fessura)"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="6.5"
+        strokeLinecap="round"
+      >
+        <path d="M46.6 18.2A19.4 19.4 0 1 0 46.6 45.8" />
+        <path d="M11.5 27H41" />
+        <path d="M11.5 38H41" />
+      </g>
+    </svg>
+  );
+}
+
 /** Importo colorato: verde se in credito, rosso se in debito. */
 export function Money({ cents, formatted }: { cents: number; formatted: string }) {
   const tone =

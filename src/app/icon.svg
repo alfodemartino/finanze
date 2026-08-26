@@ -1,0 +1,22 @@
+<!-- Icona dell'app: un euro tagliato in due, il gesto che l'app fa sulle spese.
+     Il riquadro arrotondato e la sfumatura seguono le icone di iOS. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64"
+     role="img" aria-label="Splitter">
+  <defs>
+    <linearGradient id="sfondo" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3aa0ff" />
+      <stop offset="1" stop-color="#0060df" />
+    </linearGradient>
+    <!-- La fessura non sposta le due metà: le separa, così il simbolo resta leggibile. -->
+    <mask id="fessura" maskUnits="userSpaceOnUse" x="0" y="0" width="64" height="64">
+      <rect width="64" height="64" fill="#fff" />
+      <path d="M28.9-6 40.9 70 36.7 70 24.7-6Z" fill="#000" />
+    </mask>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#sfondo)" />
+  <g mask="url(#fessura)" fill="none" stroke="#fff" stroke-width="7.5" stroke-linecap="round">
+    <path d="M46.6 18.2A19.4 19.4 0 1 0 46.6 45.8" />
+    <path d="M11.5 27H41" />
+    <path d="M11.5 38H41" />
+  </g>
+</svg>
