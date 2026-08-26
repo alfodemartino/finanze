@@ -2,11 +2,9 @@
 
 import { AuthError } from "next-auth";
 import { redirect } from "next/navigation";
-import { after } from "next/server";
 import bcrypt from "bcryptjs";
 import { signIn, signOut } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { avvisaBenvenuto } from "@/lib/mail/notify";
 import { registerSchema } from "@/lib/validation";
 import type { ActionState } from "@/lib/action-state";
 
@@ -33,12 +31,6 @@ export async function registerAction(
 
   const passwordHash = await bcrypt.hash(password, 12);
   await prisma.user.create({ data: { name, email, passwordHash } });
-
-  // Due accortezze in due righe. La mail parte con `after`, cioè a risposta
-  // già mandata: chi si registra entra subito, senza aspettare il servizio di
-  // posta. E la si prenota *prima* di `signIn`, che con `redirectTo` solleva
-  // la redirect di Next: da lì in poi questa funzione non esegue più nulla.
-  after(() => avvisaBenvenuto({ email, nome: name }));
 
   await signIn("credentials", { email, password, redirectTo: "/gruppi" });
   return {};

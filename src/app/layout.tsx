@@ -56,14 +56,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                     >
                       I miei gruppi
                     </NavLink>
-                    {/* Il nome non è più solo un'etichetta: è la porta del
-                        profilo, e resta raggiungibile anche dal telefono. */}
-                    <NavLink
-                      href="/profilo"
-                      className="max-w-[8rem] truncate rounded-control px-3 py-1.5 text-[15px] text-label-secondary transition hover:bg-fill sm:max-w-none"
-                    >
+                    <span className="hidden text-[15px] text-label-secondary sm:inline">
                       {user.name ?? user.email}
-                    </NavLink>
+                    </span>
                     <form action={logoutAction}>
                       <SubmitButton variant="ghost" size="sm" pendingLabel="Esco…">
                         Esci
