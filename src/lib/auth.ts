@@ -4,7 +4,6 @@ import Google from "next-auth/providers/google";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db";
-import { avvisaBenvenuto } from "@/lib/mail/notify";
 import { credentialsSchema } from "@/lib/validation";
 
 const providers: NextAuthConfig["providers"] = [
@@ -51,17 +50,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   // (produzione, anteprime, dominio personalizzato) senza doverlo elencare.
   trustHost: true,
   providers,
-  events: {
-    /**
-     * Scatta quando è l'adapter a creare l'utente, cioè al primo accesso con
-     * Google: chi si registra con email e password passa da `registerAction`,
-     * che crea l'utente da sé e manda il benvenuto per conto suo. Le due
-     * strade non si incrociano, quindi nessuno riceve la mail due volte.
-     */
-    async createUser({ user }) {
-      if (user.email) await avvisaBenvenuto({ email: user.email, nome: user.name });
-    },
-  },
   callbacks: {
     jwt({ token, user }) {
       if (user?.id) token.sub = user.id;
