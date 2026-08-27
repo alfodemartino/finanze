@@ -165,6 +165,50 @@ lo schema non cambia, e fallisce al primo cambio — cioè quando serve. Fuori d
 container vale la stessa regola: `npx prisma migrate deploy` sulla stringa
 diretta.
 
+### Copia giornaliera del database
+
+Neon fa i suoi backup, ma vivono dentro Neon: non coprono la perdita
+dell'accesso all'account, e quanta storia si possa riavvolgere dipende dal
+piano. `backup-db.sh` tiene una copia sulla macchina di casa.
+
+Lo script lancia `pg_dump` in un container `postgres`, sulla connessione
+**diretta** — un dump apre una sessione lunga, che il pooler in modalità
+transazione non regge. Dump, verifica e rinomina avvengono in un comando solo:
+il file nasce `.partial` e perde l'estensione solo dopo che `pg_restore --list`
+ha riletto l'archivio, così una corsa interrotta non lascia in giro qualcosa che
+sembra un backup valido.
+
+Per attivarlo, una volta sola:
+
+```bash
+sudo cp deploy/finanze-backup.{service,timer} /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now finanze-backup.timer
+
+sudo ./backup-db.sh          # prima corsa, per vedere subito se funziona
+```
+
+Il timer scatta alle 3 di notte ed è `Persistent`: se la macchina era spenta,
+la corsa saltata parte al primo avvio utile invece di essere persa.
+
+Per controllare come sta andando:
+
+```bash
+systemctl list-timers finanze-backup.timer
+journalctl -u finanze-backup -n 50
+ls -lh /var/backups/finanze          # `.ultimo-successo` porta la data buona
+```
+
+Per ripristinare, su un database vuoto:
+
+```bash
+pg_restore --clean --if-exists --no-owner --no-privileges \
+           -d "<stringa diretta>" /var/backups/finanze/finanze-<data>.dump
+```
+
+`BACKUP_DIR`, `KEEP_DAYS` e `PG_IMAGE` si regolano dal `.env`; la retention
+predefinita è 30 giorni.
+
 ### Spostare il database su un altro progetto Neon
 
 1. `npx prisma migrate deploy` sulla stringa **diretta** del progetto nuovo,
@@ -189,6 +233,7 @@ diretta.
 | `npm run db:migrate` | Applica/crea le migrazioni (**solo in sviluppo**) |
 | `npm run db:studio` | Apre Prisma Studio sui dati |
 | `./deploy.sh` | Rilascia una nuova versione sulla macchina di casa |
+| `./backup-db.sh` | Copia il database in `/var/backups/finanze` |
 
 ## Come sono organizzati i file
 
@@ -211,6 +256,8 @@ src/components/           Componenti di interfaccia e form
 Dockerfile                Immagini di produzione e delle migrazioni
 docker-compose.yml        Servizi sulla macchina di casa (app, migrate, tunnel)
 deploy.sh                 Rilascio di una nuova versione
+backup-db.sh              Copia del database, lanciata dal timer systemd
+deploy/                   Unit systemd per la copia giornaliera
 ```
 
 ## Note tecniche

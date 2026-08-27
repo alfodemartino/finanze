@@ -1,0 +1,15 @@
+[Unit]
+Description=Copia del database di Finanze
+Documentation=https://github.com/alfodemartino/finanze
+# Senza Docker non c'è niente da fare: meglio non partire che fallire.
+After=docker.service network-online.target
+Requires=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/finanze
+ExecStart=/opt/finanze/backup-db.sh
+
+# Neon può metterci qualche secondo a svegliarsi, e un dump su una connessione
+# lenta non deve restare appeso per sempre.
+TimeoutStartSec=30min
