@@ -26,12 +26,41 @@ export async function listGroupsForUser(userId: string) {
     },
     orderBy: { joinedAt: "asc" },
   });
+  if (memberships.length === 0) return [];
+
+  // Un solo `groupBy` per tutti i gruppi dell'elenco: una query in più in
+  // totale, non una per riga.
+  const totals = await prisma.expense.groupBy({
+    by: ["groupId"],
+    where: { groupId: { in: memberships.map((membership) => membership.groupId) } },
+    _sum: { amountCents: true },
+  });
+  // Un gruppo senza spese non compare fra i risultati: il suo totale è zero.
+  const totalByGroup = new Map(totals.map((row) => [row.groupId, row._sum.amountCents ?? 0]));
 
   return memberships.map((membership) => ({
     membershipId: membership.id,
     role: membership.role,
     group: membership.group,
+    totalCents: totalByGroup.get(membership.groupId) ?? 0,
   }));
+}
+
+/**
+ * Quanto ha speso il gruppo in tutto.
+ *
+ * Sono le sole spese: un rimborso sposta denaro fra i membri, non è una
+ * spesa del gruppo, e sommarlo conterebbe due volte le stesse uscite.
+ *
+ * Sta a parte da `getGroupForUser` perché quella la chiamano anche le
+ * server action, che del totale non sanno che farsene.
+ */
+export async function getGroupExpenseTotal(groupId: string) {
+  const { _sum } = await prisma.expense.aggregate({
+    where: { groupId },
+    _sum: { amountCents: true },
+  });
+  return _sum.amountCents ?? 0;
 }
 
 /**
