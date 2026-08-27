@@ -67,6 +67,26 @@ services:
     restart: "no"
     logging: *logging
 
+  # Copia del database su questa macchina, lanciata da `backup-db.sh`. Neon ha
+  # i suoi backup, ma vivono dentro Neon: questa è la copia che resta in mano
+  # tua se l'account sparisce o se una migrazione sbagliata cancella dei dati.
+  #
+  # `PG_IMAGE` deve avere una versione **maggiore o uguale** a quella del server
+  # Neon: `pg_dump` si rifiuta di leggere un server più recente di sé. La
+  # versione del server si vede nella console di Neon.
+  backup:
+    image: ${PG_IMAGE:-postgres:17}
+    env_file: .env
+    environment:
+      # Come per le migrazioni: il dump apre una sessione lunga, che il pooler
+      # in modalità transazione non regge.
+      DATABASE_URL: ${DIRECT_DATABASE_URL:-${DATABASE_URL}}
+    volumes:
+      - ${BACKUP_DIR:-/var/backups/finanze}:/backups
+    profiles: ["tools"]
+    restart: "no"
+    logging: *logging
+
   # Espone l'applicazione su internet senza aprire porte sul router: la
   # connessione parte da qui verso Cloudflare. Richiede `TUNNEL_TOKEN` nel
   # `.env` e un hostname pubblico configurato che punti a `http://app:3000`.

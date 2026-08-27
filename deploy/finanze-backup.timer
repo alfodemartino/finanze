@@ -1,0 +1,17 @@
+[Unit]
+Description=Avvia ogni giorno la copia del database di Finanze
+
+[Timer]
+# Le 3 del mattino: l'app è ferma e la linea è libera.
+OnCalendar=*-*-* 03:00:00
+
+# La macchina di casa non è sempre accesa. Senza questo, una corsa saltata
+# resta saltata per sempre; con questo parte al primo avvio utile — che è
+# esattamente il comportamento che si vuole da un backup domestico.
+Persistent=true
+
+# Se un giorno si aggiungeranno altri timer, evita che scattino tutti insieme.
+RandomizedDelaySec=15min
+
+[Install]
+WantedBy=timers.target
