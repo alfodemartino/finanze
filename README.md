@@ -209,6 +209,12 @@ pg_restore --clean --if-exists --no-owner --no-privileges \
 `BACKUP_DIR`, `KEEP_DAYS` e `PG_IMAGE` si regolano dal `.env`; la retention
 predefinita è 30 giorni.
 
+Su `PG_IMAGE` c'è una regola da ricordare quando Neon aggiornerà il server:
+`pg_dump` legge senza problemi un server **più vecchio** di sé, ma si rifiuta di
+leggerne uno **più recente**. Il default (`postgres:18`) segue la versione che
+Neon serve oggi; quando non basterà più, l'errore nominerà entrambe le versioni
+e basterà alzare il tag.
+
 ### Spostare il database su un altro progetto Neon
 
 1. `npx prisma migrate deploy` sulla stringa **diretta** del progetto nuovo,
