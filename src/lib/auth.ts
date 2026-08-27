@@ -44,10 +44,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },
   pages: { signIn: "/login" },
-  // Dietro il proxy di Vercel l'host arriva negli header inoltrati: senza
-  // questo Auth.js rifiuta ogni richiesta con UntrustedHost, e login e
-  // registrazione falliscono. Vale per qualunque dominio del progetto
-  // (produzione, anteprime, dominio personalizzato) senza doverlo elencare.
+  // L'host arriva negli header inoltrati dal proxy che sta davanti all'app:
+  // senza questo Auth.js rifiuta ogni richiesta con UntrustedHost, e login e
+  // registrazione falliscono. Così vale per ogni indirizzo da cui l'app è
+  // raggiunta — l'IP sulla LAN, il dominio pubblico dietro il tunnel — senza
+  // doverli elencare uno per uno.
   trustHost: true,
   providers,
   callbacks: {

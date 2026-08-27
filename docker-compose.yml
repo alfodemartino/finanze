@@ -1,0 +1,72 @@
+# Esecuzione in casa, su un container LXC di Proxmox. Il database non è qui:
+# resta su Neon, raggiunto via `DATABASE_URL`.
+#
+#   docker compose build                 costruisce l'immagine
+#   docker compose run --rm migrate      applica le migrazioni
+#   docker compose up -d                 avvia l'applicazione
+#
+# Il servizio `cloudflared` sta dietro il profilo `public` e resta spento
+# finché non c'è un dominio: per accenderlo basta aggiungere
+# `COMPOSE_PROFILES=public` al file `.env`.
+
+name: finanze
+
+x-logging: &logging
+  driver: json-file
+  options:
+    # Senza un tetto i log crescono finché non riempiono il disco dell'LXC.
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  app:
+    build:
+      context: .
+      target: runner
+    image: finanze-app
+    env_file: .env
+    ports:
+      # Pubblicata sulla LAN: finché non c'è il tunnel questo è l'unico modo di
+      # raggiungere l'applicazione, e resta il più diretto anche dopo.
+      - "3000:3000"
+    restart: unless-stopped
+    healthcheck:
+      # `fetch` globale di Node 22: evita di installare curl solo per questo.
+      test:
+        - CMD
+        - node
+        - -e
+        # Apici singoli YAML e doppi in JavaScript: `? 0 : 1` senza virgolette
+        # verrebbe letto come una mappa e il file non validerebbe più.
+        - 'fetch("http://127.0.0.1:3000/api/health").then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))'
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+    logging: *logging
+
+  # Container usa e getta: `docker compose run --rm migrate`. Il profilo lo
+  # tiene fuori da `up`, ma `run` lo attiva da solo quando serve.
+  migrate:
+    build:
+      context: .
+      target: migrator
+    image: finanze-migrator
+    env_file: .env
+    profiles: ["tools"]
+    restart: "no"
+    logging: *logging
+
+  # Espone l'applicazione su internet senza aprire porte sul router: la
+  # connessione parte da qui verso Cloudflare. Richiede `TUNNEL_TOKEN` nel
+  # `.env` e un hostname pubblico configurato che punti a `http://app:3000`.
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate run
+    env_file: .env
+    profiles: ["public"]
+    depends_on:
+      app:
+        condition: service_healthy
+    restart: unless-stopped
+    logging: *logging
