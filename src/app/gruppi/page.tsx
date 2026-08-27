@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { NavLink } from "@/components/NavLink";
 import { currentUser } from "@/lib/auth";
 import { listGroupsForUser } from "@/lib/groups";
+import { formatCents } from "@/lib/money";
 import { CreateGroupForm, JoinGroupForm } from "@/components/forms/GroupForms";
 import { Card, Chevron, EmptyState } from "@/components/ui";
 
@@ -25,7 +26,7 @@ export default async function GroupsPage() {
           </EmptyState>
         ) : (
           <ul className="divide-y divide-separator">
-            {groups.map(({ group, role }) => (
+            {groups.map(({ group, role, totalCents }) => (
               <li key={group.id}>
                 {/* Una riga di elenco iOS: si illumina alla pressione e finisce con il «›». */}
                 <NavLink
@@ -39,8 +40,13 @@ export default async function GroupsPage() {
                         amministratore
                       </span>
                     )}
+                    {/* Il totale non è un saldo: niente verde o rosso, solo il
+                        grigio del sottotitolo. */}
                     <span className="mt-0.5 block text-[13px] text-label-secondary">
-                      {group._count.members} membri · {group._count.expenses} spese
+                      {group._count.members} membri · {group._count.expenses} spese ·{" "}
+                      <span className="tabular-nums">
+                        {formatCents(totalCents, group.currency)}
+                      </span>
                     </span>
                   </span>
                   <Chevron />
