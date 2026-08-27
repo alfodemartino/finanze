@@ -2,6 +2,8 @@ import { notFound, redirect } from "next/navigation";
 import { currentUser } from "@/lib/auth";
 import { getGroupBalances, getGroupForUser, getGroupOperations } from "@/lib/groups";
 import { buildGroupExport, exportFileName } from "@/lib/export";
+import { logEvent } from "@/lib/log";
+import { clientIp } from "@/lib/request-ip";
 
 // Il file si costruisce con lo `zlib` di Node: serve il runtime Node.
 export const runtime = "nodejs";
@@ -31,6 +33,13 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   // L'export è riservato all'amministratore. Qui la risposta è 403 e non 404:
   // chi è nel gruppo sa già che il gruppo esiste, non c'è niente da nascondere.
   if (group.viewer.role !== "OWNER") {
+    // Vale la pena registrarlo perché questo endpoint, a differenza delle
+    // pagine, restituisce in un colpo solo tutte le operazioni del gruppo.
+    logEvent("warn", "export_negato", {
+      gruppo: group.id,
+      utente: user.id,
+      ip: await clientIp(),
+    });
     return new Response("Solo l'amministratore del gruppo può esportare i dati.", {
       status: 403,
       headers: { "Content-Type": "text/plain; charset=utf-8" },
