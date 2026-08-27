@@ -165,6 +165,57 @@ lo schema non cambia, e fallisce al primo cambio — cioè quando serve. Fuori d
 container vale la stessa regola: `npx prisma migrate deploy` sulla stringa
 diretta.
 
+### Log dell'applicazione
+
+```bash
+docker compose logs -f --tail=50 app        # in coda, con lo storico recente
+docker compose logs -t --since 2h app       # ultime due ore, con i timestamp
+docker compose logs app 2>&1 | grep -i login_fallito
+```
+
+Due avvertenze che fanno perdere tempo. Il **`2>&1` non è decorativo**: Next,
+Auth.js, Prisma e gli eventi dell'app scrivono tutti su stderr, quindi senza
+redirezione `grep` non li vede e si conclude che non ci sono errori proprio
+mentre li si sta cercando. E i timestamp sono in **UTC**: una riga delle 03:00
+sono le 05:00 italiane d'estate. Anche `--since` e `--until` ragionano in UTC.
+
+Per cercare mentre si segue in tempo reale serve `grep --line-buffered`,
+altrimenti l'output resta fermo in un buffer da qualche kilobyte.
+
+Oltre al banner di avvio e agli errori delle librerie, l'app registra una riga
+JSON per ciascuno di questi eventi — e **solo** per questi. Gli errori di
+compilazione dei form (descrizione mancante, importo scritto male) restano
+fuori di proposito: sono errori di battitura, e riempirne i log è il modo più
+efficace per rendere inutile un log.
+
+| Evento | Quando | Campi oltre a `ts`, `level`, `event` |
+| --- | --- | --- |
+| `login_fallito` | Credenziali non valide | `email`, `ip` |
+| `registrazione_email_esistente` | Iscrizione su un'email già presente | `email`, `ip` |
+| `invito_inesistente` | Codice di invito che non esiste | `codice`, `utente`, `ip` |
+| `permesso_negato` | Membro non amministratore che tenta un'azione da amministratore | `gruppo`, `utente`, `azione`, `ip` |
+| `gruppo_non_accessibile` | Azione su un gruppo di cui non si è membri | `gruppo`, `utente`, `azione`, `ip` |
+| `export_negato` | Export chiesto da chi non è amministratore | `gruppo`, `utente`, `ip` |
+| `quote_non_valide` | `computeSplits` rifiuta la ripartizione | `gruppo`, `modalita`, `totale_centesimi`, `partecipanti`, `motivo` |
+| `riga_non_trovata` | Spesa o rimborso assente nel gruppo indicato | `gruppo`, `tipo`, `riga`, `azione` |
+| `gruppo_eliminato` | Eliminazione completata (non è un errore) | `gruppo`, `nome`, `utente`, `ip` |
+
+```
+{"ts":"2026-08-27T14:32:11.482Z","level":"warn","event":"login_fallito","email":"tizio@esempio.it","ip":"93.45.1.2"}
+```
+
+Il timestamp dentro la riga è ridondante rispetto a quello di Docker: serve
+perché una riga copiata altrove resti leggibile da sola. I campi vuoti non
+compaiono — `ip` manca quando la richiesta arriva dalla LAN senza proxy davanti.
+
+`ip` va letto come un'indicazione, non come una prova: viene da
+`CF-Connecting-IP` (che mette Cloudflare) o da `X-Forwarded-For`, e l'app è
+raggiungibile anche direttamente sulla porta 3000, dove quegli header li scrive
+il chiamante. Serve a distinguere «un familiare ha sbagliato password» da
+«qualcuno da fuori sta provando».
+
+Le password non compaiono mai, in nessun evento.
+
 ### Copia giornaliera del database
 
 Neon fa i suoi backup, ma vivono dentro Neon: non coprono la perdita
@@ -255,6 +306,8 @@ src/lib/xlsx.ts           Scrittura dei file xlsx, senza dipendenze esterne
 src/lib/export.ts         Righe dell'export di un gruppo
 src/lib/theme.ts          Tema chiaro/scuro: scelta salvata e script anti-lampeggio
 src/lib/loading.ts        Conteggio delle operazioni in corso e ritardo dello spinner
+src/lib/log.ts            Riga JSON degli eventi da ritrovare nei log
+src/lib/request-ip.ts     Indirizzo del chiamante, per i log di sicurezza
 src/app/actions/          Server Action (autenticazione, gruppi, spese)
 src/app/gruppi/           Pagine dell'applicazione
 src/app/api/health/       Sonda per l'healthcheck del container

@@ -6,6 +6,8 @@ import { prisma } from "@/lib/db";
 import { currentUser } from "@/lib/auth";
 import { deleteGroupCascade, generateInviteCode, getGroupForUser } from "@/lib/groups";
 import { groupSchema, inviteCodeSchema, memberSchema } from "@/lib/validation";
+import { logEvent } from "@/lib/log";
+import { clientIp } from "@/lib/request-ip";
 import type { ActionState } from "@/lib/action-state";
 
 async function requireUser() {
@@ -14,11 +16,35 @@ async function requireUser() {
   return user;
 }
 
-/** Carica il gruppo e pretende che l'utente ne sia amministratore. */
-async function requireOwner(groupId: string, userId: string) {
+/**
+ * Carica il gruppo e pretende che l'utente ne sia amministratore.
+ *
+ * Il rifiuto si registra qui e non nei chiamanti: è un punto solo invece di
+ * cinque, e i due casi restano distinti — non essere membro del gruppo è una
+ * cosa (l'app risponde come se il gruppo non esistesse), esserlo senza essere
+ * amministratore è un'altra. `azione` dice quale operazione è stata tentata,
+ * altrimenti il log direbbe che qualcuno ha provato qualcosa senza dire cosa.
+ */
+async function requireOwner(groupId: string, userId: string, azione: string) {
   const group = await getGroupForUser(groupId, userId);
-  if (!group) return null;
-  if (group.viewer.role !== "OWNER") return null;
+  if (!group) {
+    logEvent("warn", "gruppo_non_accessibile", {
+      gruppo: groupId,
+      utente: userId,
+      azione,
+      ip: await clientIp(),
+    });
+    return null;
+  }
+  if (group.viewer.role !== "OWNER") {
+    logEvent("warn", "permesso_negato", {
+      gruppo: groupId,
+      utente: userId,
+      azione,
+      ip: await clientIp(),
+    });
+    return null;
+  }
   return group;
 }
 
@@ -71,6 +97,13 @@ export async function joinGroupAction(
     include: { members: true },
   });
   if (!group) {
+    // Il codice tentato si registra perché è già fallito: da solo è un refuso,
+    // in serie è qualcuno che prova a indovinarne uno valido.
+    logEvent("warn", "invito_inesistente", {
+      codice: parsed.data,
+      utente: user.id,
+      ip: await clientIp(),
+    });
     return { error: "Nessun gruppo trovato con questo codice." };
   }
 
@@ -111,7 +144,7 @@ export async function addMemberAction(
   const user = await requireUser();
   const groupId = String(formData.get("groupId") ?? "");
 
-  const group = await requireOwner(groupId, user.id);
+  const group = await requireOwner(groupId, user.id, "aggiungi_membro");
   if (!group) return { error: "Non hai i permessi per modificare questo gruppo." };
 
   const parsed = memberSchema.safeParse({
@@ -150,7 +183,7 @@ export async function updateMemberAction(
   const groupId = String(formData.get("groupId") ?? "");
   const memberId = String(formData.get("memberId") ?? "");
 
-  const group = await requireOwner(groupId, user.id);
+  const group = await requireOwner(groupId, user.id, "modifica_membro");
   if (!group) return { error: "Non hai i permessi per modificare questo gruppo." };
 
   const member = group.members.find((m) => m.id === memberId);
@@ -186,7 +219,7 @@ export async function deactivateMemberAction(
   const groupId = String(formData.get("groupId") ?? "");
   const memberId = String(formData.get("memberId") ?? "");
 
-  const group = await requireOwner(groupId, user.id);
+  const group = await requireOwner(groupId, user.id, "disattiva_membro");
   if (!group) return { error: "Non hai i permessi per modificare questo gruppo." };
 
   const member = group.members.find((m) => m.id === memberId);
@@ -220,7 +253,7 @@ export async function regenerateInviteCodeAction(
   const user = await requireUser();
   const groupId = String(formData.get("groupId") ?? "");
 
-  const group = await requireOwner(groupId, user.id);
+  const group = await requireOwner(groupId, user.id, "rigenera_invito");
   if (!group) return { error: "Non hai i permessi per modificare questo gruppo." };
 
   await prisma.group.update({
@@ -244,7 +277,7 @@ export async function deleteGroupAction(
   const user = await requireUser();
   const groupId = String(formData.get("groupId") ?? "");
 
-  const group = await requireOwner(groupId, user.id);
+  const group = await requireOwner(groupId, user.id, "elimina_gruppo");
   if (!group) return { error: "Solo un amministratore può eliminare il gruppo." };
 
   // Il confronto ignora maiuscole e spazi ai bordi: serve a dimostrare che si
@@ -253,6 +286,16 @@ export async function deleteGroupAction(
   if (confirmation.toLowerCase() !== group.name.trim().toLowerCase()) {
     return { error: `Per confermare, scrivi il nome del gruppo: ${group.name}` };
   }
+
+  // L'unica operazione dell'app che non si annulla: sparirebbe lo storico di
+  // tutti. Si registra prima di eseguirla, così la riga resta anche se la
+  // transazione muore a metà, e il nome perché dopo non è più recuperabile.
+  logEvent("warn", "gruppo_eliminato", {
+    gruppo: groupId,
+    nome: group.name,
+    utente: user.id,
+    ip: await clientIp(),
+  });
 
   await deleteGroupCascade(groupId);
 

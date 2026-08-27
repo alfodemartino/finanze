@@ -6,6 +6,8 @@ import { signIn, signOut } from "@/lib/auth";
 import { hashPassword } from "@/lib/password";
 import { prisma } from "@/lib/db";
 import { registerSchema } from "@/lib/validation";
+import { logEvent } from "@/lib/log";
+import { clientIp } from "@/lib/request-ip";
 import type { ActionState } from "@/lib/action-state";
 
 export async function registerAction(
@@ -26,6 +28,10 @@ export async function registerAction(
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
+    // Preso da solo è un familiare che non ricordava di essersi già iscritto.
+    // Ripetuto su indirizzi diversi è qualcuno che sonda quali email hanno un
+    // account qui.
+    logEvent("warn", "registrazione_email_esistente", { email, ip: await clientIp() });
     return { error: "Esiste già un account con questa email." };
   }
 
@@ -48,6 +54,9 @@ export async function loginAction(_prev: ActionState, formData: FormData): Promi
     await signIn("credentials", { email, password, redirectTo: "/gruppi" });
   } catch (error) {
     if (error instanceof AuthError) {
+      // Mai la password, nemmeno la sua lunghezza: serve sapere quale account
+      // e da dove, non cosa è stato digitato.
+      logEvent("warn", "login_fallito", { email, ip: await clientIp() });
       return { error: "Email o password non corretti." };
     }
     throw error; // Le redirect di Next passano di qui e devono propagarsi.

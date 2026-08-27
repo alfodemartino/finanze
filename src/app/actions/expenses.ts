@@ -8,12 +8,31 @@ import { getGroupForUser } from "@/lib/groups";
 import { parseAmountToCents } from "@/lib/money";
 import { computeSplits, SplitError, type SplitParticipant } from "@/lib/split";
 import { splitModeSchema } from "@/lib/validation";
+import { logEvent } from "@/lib/log";
+import { clientIp } from "@/lib/request-ip";
 import type { ActionState } from "@/lib/action-state";
 
-async function requireMembership(groupId: string) {
+/**
+ * Carica il gruppo solo se chi chiede ne fa parte. A chi non ne fa parte l'app
+ * risponde come se il gruppo non esistesse — non si rivela nemmeno la sua
+ * esistenza — ma nei log la differenza si vede, ed è il punto: un id di gruppo
+ * altrui in un form non ci arriva per sbaglio. `azione` dice cosa si stava
+ * tentando.
+ */
+async function requireMembership(groupId: string, azione: string) {
   const user = await currentUser();
   if (!user) redirect("/login");
-  return getGroupForUser(groupId, user.id);
+
+  const group = await getGroupForUser(groupId, user.id);
+  if (!group) {
+    logEvent("warn", "gruppo_non_accessibile", {
+      gruppo: groupId,
+      utente: user.id,
+      azione,
+      ip: await clientIp(),
+    });
+  }
+  return group;
 }
 
 function parseDate(value: FormDataEntryValue | null): Date {
@@ -28,7 +47,7 @@ export async function createExpenseAction(
   formData: FormData,
 ): Promise<ActionState> {
   const groupId = String(formData.get("groupId") ?? "");
-  const group = await requireMembership(groupId);
+  const group = await requireMembership(groupId, "crea_spesa");
   if (!group) return { error: "Gruppo non trovato." };
 
   const description = String(formData.get("description") ?? "").trim();
@@ -63,7 +82,20 @@ export async function createExpenseAction(
   try {
     splits = computeSplits(amountCents, splitMode, splitInput);
   } catch (error) {
-    if (error instanceof SplitError) return { error: error.message };
+    if (error instanceof SplitError) {
+      // Di solito è un importo esatto che non somma al totale, cioè un errore
+      // di chi compila. Ma è anche il punto in cui affiorerebbe un difetto
+      // nella ripartizione, che è la parte che non deve sbagliare: perciò si
+      // registra con il totale e la modalità, abbastanza per riprodurlo.
+      logEvent("warn", "quote_non_valide", {
+        gruppo: groupId,
+        modalita: splitMode,
+        totale_centesimi: amountCents,
+        partecipanti: participants.length,
+        motivo: error.message,
+      });
+      return { error: error.message };
+    }
     throw error;
   }
 
@@ -100,7 +132,7 @@ export async function updateExpensePayerAction(
   const groupId = String(formData.get("groupId") ?? "");
   const expenseId = String(formData.get("expenseId") ?? "");
 
-  const group = await requireMembership(groupId);
+  const group = await requireMembership(groupId, "cambia_pagatore");
   if (!group) return { error: "Gruppo non trovato." };
   if (group.viewer.role !== "OWNER") {
     return { error: "Solo un amministratore può cambiare il pagatore." };
@@ -116,7 +148,17 @@ export async function updateExpensePayerAction(
     where: { id: expenseId, groupId },
     data: { payerId },
   });
-  if (updated.count === 0) return { error: "Spesa non trovata." };
+  if (updated.count === 0) {
+    // Il vincolo sul gruppo ha respinto la riga: o un doppio invio su
+    // qualcosa di già eliminato, o un id che non appartiene a questo gruppo.
+    logEvent("warn", "riga_non_trovata", {
+      gruppo: groupId,
+      tipo: "spesa",
+      riga: expenseId,
+      azione: "cambia_pagatore",
+    });
+    return { error: "Spesa non trovata." };
+  }
 
   revalidatePath(`/gruppi/${groupId}`);
   revalidatePath(`/gruppi/${groupId}/spese`);
@@ -131,13 +173,23 @@ export async function deleteExpenseAction(
   const groupId = String(formData.get("groupId") ?? "");
   const expenseId = String(formData.get("expenseId") ?? "");
 
-  const group = await requireMembership(groupId);
+  const group = await requireMembership(groupId, "elimina_spesa");
   if (!group) return { error: "Gruppo non trovato." };
 
   // `deleteMany` con il vincolo sul gruppo evita di cancellare la spesa di
   // un altro gruppo passando un id arbitrario nel form.
   const deleted = await prisma.expense.deleteMany({ where: { id: expenseId, groupId } });
-  if (deleted.count === 0) return { error: "Spesa non trovata." };
+  if (deleted.count === 0) {
+    // Il vincolo sul gruppo ha respinto la riga: o un doppio invio su
+    // qualcosa di già eliminato, o un id che non appartiene a questo gruppo.
+    logEvent("warn", "riga_non_trovata", {
+      gruppo: groupId,
+      tipo: "spesa",
+      riga: expenseId,
+      azione: "elimina_spesa",
+    });
+    return { error: "Spesa non trovata." };
+  }
 
   revalidatePath(`/gruppi/${groupId}`);
   revalidatePath(`/gruppi/${groupId}/spese`);
@@ -149,7 +201,7 @@ export async function createSettlementAction(
   formData: FormData,
 ): Promise<ActionState> {
   const groupId = String(formData.get("groupId") ?? "");
-  const group = await requireMembership(groupId);
+  const group = await requireMembership(groupId, "crea_rimborso");
   if (!group) return { error: "Gruppo non trovato." };
 
   const fromMemberId = String(formData.get("fromMemberId") ?? "");
@@ -191,11 +243,21 @@ export async function deleteSettlementAction(
   const groupId = String(formData.get("groupId") ?? "");
   const settlementId = String(formData.get("settlementId") ?? "");
 
-  const group = await requireMembership(groupId);
+  const group = await requireMembership(groupId, "elimina_rimborso");
   if (!group) return { error: "Gruppo non trovato." };
 
   const deleted = await prisma.settlement.deleteMany({ where: { id: settlementId, groupId } });
-  if (deleted.count === 0) return { error: "Rimborso non trovato." };
+  if (deleted.count === 0) {
+    // Il vincolo sul gruppo ha respinto la riga: o un doppio invio su
+    // qualcosa di già eliminato, o un id che non appartiene a questo gruppo.
+    logEvent("warn", "riga_non_trovata", {
+      gruppo: groupId,
+      tipo: "rimborso",
+      riga: settlementId,
+      azione: "elimina_rimborso",
+    });
+    return { error: "Rimborso non trovato." };
+  }
 
   revalidatePath(`/gruppi/${groupId}`);
   revalidatePath(`/gruppi/${groupId}/saldi`);
