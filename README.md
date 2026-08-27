@@ -72,36 +72,108 @@ Basta valorizzare `AUTH_GOOGLE_ID` e `AUTH_GOOGLE_SECRET`: il pulsante compare
 da solo nella pagina di accesso. L'URL di callback da registrare su Google è
 `<AUTH_URL>/api/auth/callback/google`.
 
-## Deploy (Vercel + Neon)
+## Deploy in casa (Docker + Neon)
 
-L'app gira su Vercel con il database su Neon, nella regione **AWS
-`eu-central-1` (Francoforte)**: è la più vicina a chi usa l'app, e tenere
-database e utenti nello stesso continente evita che ogni query attraversi
-l'Atlantico. Servono due variabili d'ambiente nel progetto Vercel:
+L'applicazione gira in un container Docker su una macchina di casa — nel nostro
+caso un container LXC di Proxmox — mentre il database resta su Neon, nella
+regione **AWS `eu-central-1` (Francoforte)**.
+
+Il `Dockerfile` è a più stadi e ne produce due immagini: `runner`, il server di
+produzione, e `migrator`, un container usa e getta che applica le migrazioni.
+Sono separati perché la CLI di Prisma non deve stare nell'immagine che resta
+accesa. `next.config.ts` dichiara `output: "standalone"`, quindi nel runner
+finiscono solo le dipendenze tracciate.
+
+### Variabili d'ambiente
+
+Vivono nel file `.env` accanto al `docker-compose.yml`, mai nell'immagine:
 
 | Variabile | Valore |
 | --- | --- |
 | `DATABASE_URL` | La stringa **pooled** di Neon (host con `-pooler`), con `?sslmode=require&pgbouncer=true&connect_timeout=15` |
+| `DIRECT_DATABASE_URL` | La stringa **diretta** di Neon (host senza `-pooler`). La usa solo il servizio `migrate`; vuota se il database non ha un pooler |
 | `AUTH_SECRET` | Una chiave generata con `npx auth secret` |
+| `AUTH_URL` | Vuoto quando si accede dalla LAN, il dominio `https://…` quando l'app è pubblica |
+| `COMPOSE_PROFILES` | Vuoto per la sola app, `public` per accendere anche il tunnel |
+| `TUNNEL_TOKEN` | Il token del tunnel Cloudflare, solo con il profilo `public` |
 
-`AUTH_URL` non serve: il codice imposta `trustHost: true`, così Auth.js
-accetta l'host che arriva dal proxy di Vercel — produzione, anteprime e
-dominio personalizzato — senza doverli elencare. Senza quell'opzione ogni
-richiesta di login o registrazione fallisce con `UntrustedHost`.
+Su `AUTH_URL` la regola non è di gusto: il codice imposta `trustHost: true`,
+così Auth.js ricava l'host dagli header inoltrati. Finché si accede per
+indirizzo IP conviene **lasciarlo vuoto**, altrimenti ogni indirizzo diverso da
+quello scritto smette di funzionare. Con un dominio unico davanti, invece,
+fissarlo evita sorprese sui redirect di login. Senza `trustHost` ogni richiesta
+di login fallirebbe con `UntrustedHost`.
 
-Le migrazioni non girano durante il build: vanno applicate a parte con
-`npm run db:migrate` (o `npx prisma migrate deploy`) puntando alla stringa
-di connessione **diretta** di Neon, quella senza `-pooler`.
+### Primo avvio
+
+```bash
+git clone https://github.com/alfodemartino/finanze /opt/finanze
+cd /opt/finanze
+cp .env.example .env        # poi compila DATABASE_URL e AUTH_SECRET
+chmod 600 .env
+
+docker compose build
+docker compose run --rm migrate
+docker compose up -d
+```
+
+Poi si verifica a strati, dal più interno al più esterno: così quando qualcosa
+non va si sa subito da che parte guardare.
+
+```bash
+curl -fsS localhost:3000/api/health   # dentro la macchina  -> {"ok":true}
+```
+
+`http://<ip-macchina>:3000` da un altro dispositivo della rete, e — se il
+tunnel è attivo — l'indirizzo pubblico.
+
+### Esporre l'app su internet
+
+Il servizio `cloudflared` sta dietro il profilo `public` e resta spento finché
+non serve. Per accenderlo servono un dominio su Cloudflare e un tunnel creato
+da **Zero Trust → Networks → Tunnels**, con un hostname pubblico che punta a
+`http://app:3000`. Poi basta aggiungere al `.env`:
+
+```
+COMPOSE_PROFILES="public"
+TUNNEL_TOKEN="…"
+AUTH_URL="https://finanze.esempio.it"
+```
+
+e rilanciare `docker compose up -d`. Il tunnel apre una connessione **in
+uscita** verso Cloudflare: non si aprono porte sul router, e funziona anche con
+un IP dinamico o sotto CGNAT. Il certificato HTTPS lo gestisce Cloudflare.
+
+### Rilasciare una nuova versione
+
+```bash
+./deploy.sh
+```
+
+Aggiorna il codice, ricostruisce l'immagine, applica le migrazioni e riavvia.
+**Il merge su `main` non è più un rilascio:** il rilascio è questo script.
+
+Le migrazioni non girano durante il build né all'avvio del server: sono un passo
+separato (`docker compose run --rm migrate`, che esegue `prisma migrate deploy`).
+
+Quel servizio si collega con `DIRECT_DATABASE_URL`, non con la stringa pooled
+dell'app, e la ragione è una trappola che si manifesta tardi: il pooler di Neon
+è PgBouncer in modalità transazione, dove `prisma migrate deploy` non riesce ad
+applicare una migrazione, mentre **leggere** quelle già applicate funziona lo
+stesso. Con la sola stringa pooled il comando sembra quindi funzionare finché
+lo schema non cambia, e fallisce al primo cambio — cioè quando serve. Fuori dai
+container vale la stessa regola: `npx prisma migrate deploy` sulla stringa
+diretta.
 
 ### Spostare il database su un altro progetto Neon
 
 1. `npx prisma migrate deploy` sulla stringa **diretta** del progetto nuovo,
    per creare tabelle e indici.
 2. Copiare i dati dal vecchio al nuovo (`pg_dump --data-only` → `psql`).
-3. Aggiornare `DATABASE_URL` nel progetto Vercel con la stringa **pooled**
-   del progetto nuovo e rifare il deploy: le variabili d'ambiente vengono
-   lette al build, quindi finché non si ridistribuisce l'app continua a
-   parlare col vecchio database.
+3. Aggiornare `DATABASE_URL` nel `.env` con la stringa **pooled** del progetto
+   nuovo e rilanciare `docker compose up -d`: le variabili si leggono all'avvio
+   del container, quindi finché non lo si ricrea l'app continua a parlare col
+   vecchio database.
 4. Solo dopo aver verificato che l'app funziona, cancellare il vecchio
    progetto Neon.
 
@@ -114,8 +186,9 @@ di connessione **diretta** di Neon, quella senza `-pooler`.
 | `npm test` | Esegue i test |
 | `npm run typecheck` | Controlla i tipi |
 | `npm run lint` | ESLint |
-| `npm run db:migrate` | Applica/crea le migrazioni |
+| `npm run db:migrate` | Applica/crea le migrazioni (**solo in sviluppo**) |
 | `npm run db:studio` | Apre Prisma Studio sui dati |
+| `./deploy.sh` | Rilascia una nuova versione sulla macchina di casa |
 
 ## Come sono organizzati i file
 
@@ -133,7 +206,11 @@ src/lib/theme.ts          Tema chiaro/scuro: scelta salvata e script anti-lampeg
 src/lib/loading.ts        Conteggio delle operazioni in corso e ritardo dello spinner
 src/app/actions/          Server Action (autenticazione, gruppi, spese)
 src/app/gruppi/           Pagine dell'applicazione
+src/app/api/health/       Sonda per l'healthcheck del container
 src/components/           Componenti di interfaccia e form
+Dockerfile                Immagini di produzione e delle migrazioni
+docker-compose.yml        Servizi sulla macchina di casa (app, migrate, tunnel)
+deploy.sh                 Rilascio di una nuova versione
 ```
 
 ## Note tecniche

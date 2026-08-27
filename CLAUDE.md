@@ -10,8 +10,11 @@ Si sviluppa su un branch dedicato e **si apre sempre una pull request**: il
 merge su `main` avviene dalla PR, non con un merge locale. La history del
 progetto è fatta di commit `Merge pull request #N: …` e va mantenuta così.
 
-Il deploy in produzione (Vercel) parte da solo a ogni push su `main`: un merge
-è un rilascio, non un salvataggio.
+Il deploy è in corso di migrazione da Vercel a una macchina di casa, e finché
+dura la transizione **un merge su `main` va trattato come un rilascio**: Vercel
+ridistribuisce da solo a ogni push. Quando Vercel sarà spento il rilascio
+diventerà esplicito — `./deploy.sh` sulla macchina — e questa riga andrà
+riscritta.
 
 Commit, PR, commenti nel codice e testi dell'interfaccia sono **in italiano**.
 Il messaggio di commit spiega *perché* si cambia qualcosa, non solo cosa.
@@ -90,6 +93,9 @@ l'ordine del foglio di stile, non quello in cui le scrivi.
 
 ## Database
 
-Le migrazioni **non** girano durante il build: vanno applicate a parte, con la
-stringa di connessione **diretta** di Neon (quella senza `-pooler`).
-`DATABASE_URL` su Vercel è invece la stringa **pooled**.
+Le migrazioni **non** girano durante il build, né all'avvio del server: vanno
+applicate a parte, con la stringa di connessione **diretta** di Neon (quella
+senza `-pooler`). La `DATABASE_URL` che usa l'applicazione è invece la stringa
+**pooled**. Nei container il passo è `docker compose run --rm migrate`, che
+esegue `prisma migrate deploy`: mai `npm run db:migrate`, che è
+`prisma migrate dev` e in certi casi ricrea il database.
