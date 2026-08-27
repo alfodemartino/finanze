@@ -53,6 +53,16 @@ services:
       target: migrator
     image: finanze-migrator
     env_file: .env
+    environment:
+      # Le migrazioni non passano dal pooler. Quello di Neon è PgBouncer in
+      # modalità transazione, e `prisma migrate deploy` usa lock e statement
+      # preparati che lì non sopravvivono: leggere le migrazioni già applicate
+      # funziona lo stesso, applicarne una nuova no. Il guasto arriverebbe
+      # quindi solo al primo cambio di schema, che è il momento peggiore per
+      # scoprirlo. Se `DIRECT_DATABASE_URL` non è valorizzata si ricade su
+      # `DATABASE_URL`, che è la cosa giusta quando il database non ha un
+      # pooler davanti.
+      DATABASE_URL: ${DIRECT_DATABASE_URL:-${DATABASE_URL}}
     profiles: ["tools"]
     restart: "no"
     logging: *logging

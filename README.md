@@ -91,6 +91,7 @@ Vivono nel file `.env` accanto al `docker-compose.yml`, mai nell'immagine:
 | Variabile | Valore |
 | --- | --- |
 | `DATABASE_URL` | La stringa **pooled** di Neon (host con `-pooler`), con `?sslmode=require&pgbouncer=true&connect_timeout=15` |
+| `DIRECT_DATABASE_URL` | La stringa **diretta** di Neon (host senza `-pooler`). La usa solo il servizio `migrate`; vuota se il database non ha un pooler |
 | `AUTH_SECRET` | Una chiave generata con `npx auth secret` |
 | `AUTH_URL` | Vuoto quando si accede dalla LAN, il dominio `https://…` quando l'app è pubblica |
 | `COMPOSE_PROFILES` | Vuoto per la sola app, `public` per accendere anche il tunnel |
@@ -154,8 +155,15 @@ Aggiorna il codice, ricostruisce l'immagine, applica le migrazioni e riavvia.
 
 Le migrazioni non girano durante il build né all'avvio del server: sono un passo
 separato (`docker compose run --rm migrate`, che esegue `prisma migrate deploy`).
-Fuori dai container si applicano con `npx prisma migrate deploy` puntando alla
-stringa di connessione **diretta** di Neon, quella senza `-pooler`.
+
+Quel servizio si collega con `DIRECT_DATABASE_URL`, non con la stringa pooled
+dell'app, e la ragione è una trappola che si manifesta tardi: il pooler di Neon
+è PgBouncer in modalità transazione, dove `prisma migrate deploy` non riesce ad
+applicare una migrazione, mentre **leggere** quelle già applicate funziona lo
+stesso. Con la sola stringa pooled il comando sembra quindi funzionare finché
+lo schema non cambia, e fallisce al primo cambio — cioè quando serve. Fuori dai
+container vale la stessa regola: `npx prisma migrate deploy` sulla stringa
+diretta.
 
 ### Spostare il database su un altro progetto Neon
 
