@@ -140,6 +140,23 @@ export function EmptyState({ children }: { children: ReactNode }) {
   );
 }
 
+/**
+ * Il rettangolo grigio che tiene il posto di un dato mentre il server lo
+ * prepara: stessa forma e stessa altezza del testo che sostituirà, così quando
+ * il contenuto arriva la pagina non salta. Pulsa piano per dire che sta
+ * lavorando, e sta fermo per chi ha chiesto meno animazioni.
+ *
+ * È decorativo: l'attesa la annuncia `SkeletonPage`, non i singoli blocchi.
+ */
+export function Skeleton({ className = "" }: { className?: string }) {
+  return (
+    <span
+      aria-hidden
+      className={`block animate-pulse rounded-md bg-fill motion-reduce:animate-none ${className}`}
+    />
+  );
+}
+
 /** Il segno «›» che su iOS chiude ogni riga che porta da qualche parte. */
 export function Chevron({ className = "" }: { className?: string }) {
   return (

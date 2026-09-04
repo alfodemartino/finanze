@@ -162,6 +162,35 @@ body {
 }
 
 /*
+ * L'impalcatura delle pagine in caricamento resta invisibile per un momento,
+ * poi sfuma. È lo stesso patto dei 150 ms dell'overlay (`src/lib/loading.ts`):
+ * quando il server risponde in fretta il grigio non fa in tempo a comparire,
+ * e al suo posto arriva direttamente la pagina. Qui l'attesa non può stare nel
+ * codice — il fallback lo monta Next — quindi la fa il ritardo dell'animazione,
+ * con `both` a tenere l'opacità a zero finché non parte.
+ */
+.skeleton-in {
+  animation: skeleton-in 0.2s ease-out 0.15s both;
+}
+
+@keyframes skeleton-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Chi ha chiesto meno animazioni tiene comunque il ritardo: senza, tornerebbe
+   il lampo di grigio che l'attesa serve proprio a evitare. */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-in {
+    animation-duration: 0s;
+  }
+}
+
+/*
  * L'indicatore di attività di iOS: una corona che sfuma e gira a scatti, uno
  * per ognuna delle otto lamelle. Prende il colore dal testo (`currentColor`).
  */

@@ -91,6 +91,26 @@ classi. La dimensione dei pulsanti è la proprietà `size` (`md`, `sm`), non
 classi di padding passate da fuori: due utility uguali in conflitto le risolve
 l'ordine del foglio di stile, non quello in cui le scrivi.
 
+## Attesa
+
+Due indicatori, e non si sovrappongono.
+
+Il **caricamento di una pagina** lo copre il suo `loading.tsx`: Next mostra
+l'impalcatura mentre il server prepara i dati. I pezzi stanno in
+`src/components/Skeletons.tsx` e la regola è una sola — *quello che non dipende
+dai dati si mostra per davvero*: titoli, descrizioni e struttura restano testo
+vero, a diventare grigi sono solo i valori in arrivo. Una pagina nuova vuole
+quindi anche il suo file di attesa, altrimenti eredita quello del segmento
+sopra e mostra l'impalcatura sbagliata.
+
+Tutto il resto — l'invio di un form, una navigazione verso una rotta senza
+`loading.tsx` — lo copre l'**overlay** con lo spinner (`LoadingProvider`), che i
+componenti accendono con `useLoadingWhile`. Entrambi aspettano 150 ms prima di
+farsi vedere, così una risposta rapida non fa lampeggiare niente: l'overlay con
+un `setTimeout` (`src/lib/loading.ts`), l'impalcatura con il ritardo
+dell'animazione `.skeleton-in`, perché il suo fallback lo monta Next e non c'è
+codice nostro dove aspettare.
+
 ## Database
 
 Le migrazioni **non** girano durante il build, né all'avvio del server: vanno
