@@ -8,6 +8,13 @@ import { Card, Chevron, EmptyState } from "@/components/ui";
 
 export const metadata = { title: "I miei gruppi — Finanze" };
 
+/*
+ * La cartella `(elenco)` non compare nell'indirizzo — la pagina resta `/gruppi`
+ * — ma le dà un `loading.tsx` tutto suo, distinto da quello del singolo gruppo.
+ * Senza, un solo file di attesa in `gruppi/` varrebbe per entrambe le rotte e
+ * chi apre un gruppo vedrebbe per un istante l'impalcatura dell'elenco.
+ */
+
 export default async function GroupsPage() {
   const user = await currentUser();
   if (!user) redirect("/login");
