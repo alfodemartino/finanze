@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   computeBalances,
+  computePairwiseBalances,
   simplifyDebts,
   type BalanceInputExpense,
   type MemberBalance,
@@ -119,5 +120,86 @@ describe("simplifyDebts", () => {
     expect(debts).toHaveLength(2);
     expect(debts.every((d) => d.fromMemberId === "anna")).toBe(true);
     expect(debts.reduce((sum, d) => sum + d.amountCents, 0)).toBe(1000);
+  });
+});
+
+describe("computePairwiseBalances", () => {
+  /** Il saldo verso una persona, cercato per nome fra i risultati. */
+  function verso(balances: ReturnType<typeof computePairwiseBalances>, memberId: string) {
+    return balances.find((b) => b.memberId === memberId)?.netCents;
+  }
+
+  it("chi anticipa diventa creditore della quota di ognuno", () => {
+    const balances = computePairwiseBalances("anna", members, [expense("anna", 3000)]);
+
+    // Anna non compare fra i propri saldi: verso se stessa non deve niente.
+    expect(balances.map((b) => b.memberId)).toEqual(["bruno", "carla"]);
+    expect(verso(balances, "bruno")).toBe(1000);
+    expect(verso(balances, "carla")).toBe(1000);
+  });
+
+  it("chi non anticipa deve al pagatore la sola propria quota", () => {
+    const balances = computePairwiseBalances("bruno", members, [expense("anna", 3000)]);
+
+    expect(verso(balances, "anna")).toBe(-1000);
+    // Con Carla non c'è stato niente: il debito è verso chi ha pagato, non
+    // verso gli altri partecipanti alla spesa.
+    expect(verso(balances, "carla")).toBe(0);
+  });
+
+  it("il saldo fra due persone è lo stesso visto dai due lati, col segno opposto", () => {
+    const expenses = [expense("anna", 3000), expense("bruno", 900)];
+    const settlements = [{ fromMemberId: "carla", toMemberId: "anna", amountCents: 400 }];
+
+    const daAnna = computePairwiseBalances("anna", members, expenses, settlements);
+    const daBruno = computePairwiseBalances("bruno", members, expenses, settlements);
+
+    expect(verso(daAnna, "bruno")).toBe(-verso(daBruno, "anna")!);
+  });
+
+  it("la somma dei saldi verso gli altri è il saldo del membro nel gruppo", () => {
+    // È l'invariante che tiene insieme il totale del riepilogo e l'elenco per
+    // persona che gli sta sotto: se saltasse, i due numeri racconterebbero
+    // storie diverse.
+    const expenses = [expense("anna", 3000), expense("bruno", 900), expense("carla", 600)];
+    const settlements = [
+      { fromMemberId: "bruno", toMemberId: "anna", amountCents: 500 },
+      { fromMemberId: "carla", toMemberId: "bruno", amountCents: 250 },
+    ];
+
+    const balances = computeBalances(members, expenses, settlements);
+
+    for (const member of members) {
+      const pairwise = computePairwiseBalances(member.id, members, expenses, settlements);
+      const somma = pairwise.reduce((sum, b) => sum + b.netCents, 0);
+      expect(somma).toBe(balances.find((b) => b.memberId === member.id)!.netCents);
+    }
+  });
+
+  it("un rimborso riduce il debito verso chi lo riceve", () => {
+    const expenses = [expense("anna", 3000)];
+
+    expect(verso(computePairwiseBalances("bruno", members, expenses), "anna")).toBe(-1000);
+    expect(
+      verso(
+        computePairwiseBalances("bruno", members, expenses, [
+          { fromMemberId: "bruno", toMemberId: "anna", amountCents: 1000 },
+        ]),
+        "anna",
+      ),
+    ).toBe(0);
+  });
+
+  it("ignora i membri che non appartengono al gruppo", () => {
+    // Una spesa di un gruppo diverso non deve entrare nei conti di questo.
+    const balances = computePairwiseBalances("anna", members, [
+      {
+        payerId: "dario",
+        amountCents: 1000,
+        splits: [{ memberId: "anna", amountCents: 1000 }],
+      },
+    ]);
+
+    expect(balances.every((b) => b.netCents === 0)).toBe(true);
   });
 });

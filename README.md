@@ -16,6 +16,10 @@ necessari a pareggiare i conti.
   mentre si compila il form.
 - **Saldi** — per ogni persona: quanto ha anticipato, quanto è a suo carico e
   quanto le resta da dare o ricevere.
+- **Riepilogo su tutti i gruppi** — in cima a «I miei gruppi»: quanto si deve
+  dare o ricevere in tutto e il saldo verso ogni persona, sommando i gruppi che
+  si hanno in comune. È il saldo reale con quella persona, ricostruito dalle
+  spese, non la somma dei pagamenti suggeriti dentro i singoli gruppi.
 - **Debiti semplificati** — invece di tanti bonifici incrociati, l'app propone al
   massimo `n-1` pagamenti per `n` membri.
 - **Rimborsi** — quando qualcuno salda, si registra il pagamento e i saldi si

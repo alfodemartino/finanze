@@ -88,6 +88,24 @@ export function SkeletonForm({ fields = 2 }: { fields?: number }) {
   );
 }
 
+/**
+ * Il riquadro del totale in cima a «I miei gruppi»: la riga che dice di che
+ * numero si tratta, il numero grande e i due lati che lo compongono.
+ *
+ * Qui è grigio anche il testo, non solo l'importo: «In tutto ti devono» o «In
+ * tutto devi dare» dipende dal segno del saldo, che è appunto il dato in
+ * arrivo.
+ */
+export function SkeletonTotals() {
+  return (
+    <div className="px-4 py-5">
+      <Skeleton className="h-3.5 w-32" />
+      <Skeleton className="mt-2 h-8 w-40 max-w-full" />
+      <Skeleton className="mt-3 h-3.5 w-64 max-w-full" />
+    </div>
+  );
+}
+
 /** Il pulsante piccolo che alcune card hanno nell'intestazione. */
 function SkeletonAction() {
   return <Skeleton className="h-7 w-40 max-w-full rounded-control" />;

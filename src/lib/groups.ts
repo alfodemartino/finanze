@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { computeBalances, simplifyDebts } from "@/lib/balances";
+import { buildOverview, type CurrencyOverview, type OverviewGroupInput } from "@/lib/overview";
 import { GROUP_CASCADE_ORDER, type GroupTable } from "@/lib/group-cascade";
 
 /** Codice di invito leggibile, senza caratteri ambigui (0/O, 1/I). */
@@ -108,6 +109,83 @@ export async function getGroupBalances(groupId: string) {
   const visible = balances.filter((b) => activeIds.has(b.memberId) || b.netCents !== 0);
 
   return { balances: visible, debts: simplifyDebts(balances) };
+}
+
+/**
+ * Il riepilogo dell'utente su tutti i suoi gruppi: quanto deve dare o ricevere
+ * in tutto e qual è il saldo verso ogni persona con cui condivide un gruppo.
+ *
+ * Quattro query in tutto, non tre per gruppo: `getGroupBalances` risponde su un
+ * gruppo solo, e chiamarla in ciclo qui vorrebbe dire moltiplicare le query per
+ * il numero di gruppi. I dati arrivano tutti insieme con un `in` sugli id e si
+ * raggruppano in memoria.
+ */
+export async function getUserOverview(userId: string): Promise<CurrencyOverview[]> {
+  const memberships = await prisma.member.findMany({
+    where: { userId, active: true },
+    select: { groupId: true, group: { select: { id: true, name: true, currency: true } } },
+    orderBy: { joinedAt: "asc" },
+  });
+  if (memberships.length === 0) return [];
+
+  const groupIds = memberships.map((membership) => membership.groupId);
+  const where = { groupId: { in: groupIds } };
+
+  const [members, expenses, settlements] = await Promise.all([
+    prisma.member.findMany({
+      where,
+      select: { id: true, groupId: true, name: true, userId: true },
+      orderBy: { joinedAt: "asc" },
+    }),
+    prisma.expense.findMany({
+      where,
+      select: {
+        groupId: true,
+        payerId: true,
+        amountCents: true,
+        splits: { select: { memberId: true, amountCents: true } },
+      },
+    }),
+    prisma.settlement.findMany({
+      where,
+      select: { groupId: true, fromMemberId: true, toMemberId: true, amountCents: true },
+    }),
+  ]);
+
+  const byGroup = <T extends { groupId: string }>(rows: T[]) => {
+    const map = new Map<string, T[]>();
+    for (const row of rows) {
+      const list = map.get(row.groupId);
+      if (list) list.push(row);
+      else map.set(row.groupId, [row]);
+    }
+    return map;
+  };
+
+  const membersByGroup = byGroup(members);
+  const expensesByGroup = byGroup(expenses);
+  const settlementsByGroup = byGroup(settlements);
+
+  const input: OverviewGroupInput[] = [];
+  for (const { group } of memberships) {
+    const groupMembers = membersByGroup.get(group.id) ?? [];
+    // Il membro con cui l'utente partecipa: senza, il gruppo non ha un punto di
+    // vista da cui calcolare i saldi e va saltato.
+    const viewer = groupMembers.find((member) => member.userId === userId);
+    if (!viewer) continue;
+
+    input.push({
+      id: group.id,
+      name: group.name,
+      currency: group.currency,
+      viewerMemberId: viewer.id,
+      members: groupMembers,
+      expenses: expensesByGroup.get(group.id) ?? [],
+      settlements: settlementsByGroup.get(group.id) ?? [],
+    });
+  }
+
+  return buildOverview(input);
 }
 
 /** Spese del gruppo, dalla più recente. */

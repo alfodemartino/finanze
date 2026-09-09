@@ -1,10 +1,11 @@
 import { redirect } from "next/navigation";
 import { NavLink } from "@/components/NavLink";
 import { currentUser } from "@/lib/auth";
-import { listGroupsForUser } from "@/lib/groups";
+import { getUserOverview, listGroupsForUser } from "@/lib/groups";
 import { formatCents } from "@/lib/money";
 import { CreateGroupForm, JoinGroupForm } from "@/components/forms/GroupForms";
 import { Card, Chevron, EmptyState } from "@/components/ui";
+import { OverviewSettled, OverviewTotals, PersonBalanceList } from "@/components/Overview";
 
 export const metadata = { title: "I miei gruppi — Finanze" };
 
@@ -19,11 +20,49 @@ export default async function GroupsPage() {
   const user = await currentUser();
   if (!user) redirect("/login");
 
-  const groups = await listGroupsForUser(user.id);
+  const [groups, overview] = await Promise.all([
+    listGroupsForUser(user.id),
+    getUserOverview(user.id),
+  ]);
 
   return (
     <div className="space-y-6">
       <h1 className="text-[28px] font-bold tracking-[-0.02em]">I miei gruppi</h1>
+
+      {/* Il riepilogo sta sopra l'elenco perché risponde alla prima domanda che
+          ci si fa entrando: come sto messo. I gruppi sono il dettaglio.
+          Un blocco per valuta: `Group.currency` è per gruppo e importi in
+          valute diverse non si sommano. Con tutti i gruppi in euro — il caso
+          normale — di blocchi se ne vede uno solo. */}
+      {groups.length === 0 ? null : overview.length === 0 ? (
+        // Chi non ha ancora gruppi non ha nemmeno conti da riepilogare: la card
+        // salta del tutto, il messaggio «siamo in pari» spetta solo a chi in un
+        // gruppo c'è ma non deve niente a nessuno.
+        <Card title="Il tuo riepilogo" flush>
+          <OverviewSettled />
+        </Card>
+      ) : (
+        overview.map((blocco) => (
+          <div key={blocco.currency} className="space-y-6">
+            <Card
+              title={
+                overview.length > 1 ? `Il tuo riepilogo (${blocco.currency})` : "Il tuo riepilogo"
+              }
+              flush
+            >
+              <OverviewTotals overview={blocco} />
+            </Card>
+
+            <Card
+              title="Saldo per persona"
+              description="Quanto devi dare o ricevere da ognuno, sommando i gruppi che avete in comune."
+              flush
+            >
+              <PersonBalanceList overview={blocco} />
+            </Card>
+          </div>
+        ))
+      )}
 
       <Card title="Gruppi a cui partecipi" flush>
         {groups.length === 0 ? (
