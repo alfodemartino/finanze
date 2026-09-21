@@ -8,7 +8,7 @@ import {
   updateMemberAction,
 } from "@/app/actions/groups";
 import { emptyActionState } from "@/lib/action-state";
-import { Alert, Field, Input } from "@/components/ui";
+import { Alert, Checkbox, Field, Input } from "@/components/ui";
 import { SubmitButton } from "@/components/SubmitButton";
 
 export function AddMemberForm({ groupId }: { groupId: string }) {
@@ -32,6 +32,15 @@ export function AddMemberForm({ groupId }: { groupId: string }) {
         <Input name="shareWeight" type="number" min={0} max={1000} defaultValue={100} />
       </Field>
 
+      <div>
+        <Checkbox name="defaultSelected" defaultChecked>
+          Partecipa di default alle spese
+        </Checkbox>
+        <span className="mt-1.5 block text-[12px] text-label-secondary">
+          Se è spento, il form di una nuova spesa non lo spunta: lo si aggiunge quando serve.
+        </span>
+      </div>
+
       <SubmitButton pendingLabel="Aggiungo…">Aggiungi il membro</SubmitButton>
     </form>
   );
@@ -43,7 +52,15 @@ export function MemberRow({
   canManage,
 }: {
   groupId: string;
-  member: { id: string; name: string; shareWeight: number; role: string; active: boolean; hasAccount: boolean };
+  member: {
+    id: string;
+    name: string;
+    shareWeight: number;
+    role: string;
+    active: boolean;
+    hasAccount: boolean;
+    defaultSelected: boolean;
+  };
   canManage: boolean;
 }) {
   const [updateState, updateFormAction] = useActionState(updateMemberAction, emptyActionState);
@@ -56,6 +73,11 @@ export function MemberRow({
           {member.name}
           {!member.active && (
             <span className="ml-2 text-[12px] text-label-tertiary">non attivo</span>
+          )}
+          {/* Va detto anche a chi non può cambiarlo: spiega perché il form di
+              una nuova spesa non lo trova già spuntato. */}
+          {member.active && !member.defaultSelected && (
+            <span className="ml-2 text-[12px] text-label-tertiary">non preselezionato</span>
           )}
         </span>
         <span className="text-label-secondary">quota {member.shareWeight}</span>
@@ -78,6 +100,16 @@ export function MemberRow({
           <span className="mb-1 block text-[12px] text-label-secondary">Quota</span>
           <Input name="shareWeight" type="number" min={0} max={1000} defaultValue={member.shareWeight} />
         </label>
+
+        {/* `basis-full`: la casella apre una riga sua sotto i due campi, così
+            l'etichetta per esteso non stringe il nome. */}
+        <Checkbox
+          name="defaultSelected"
+          defaultChecked={member.defaultSelected}
+          className="basis-full text-[13px] text-label-secondary"
+        >
+          Partecipa di default alle spese
+        </Checkbox>
 
         <SubmitButton variant="secondary" size="sm" className="mb-0.5" pendingLabel="Salvo…">
           Salva

@@ -38,7 +38,9 @@ async function main() {
         create: [
           { userId: user.id, name: "Anna", role: "OWNER", shareWeight: 60 },
           { name: "Bruno", shareWeight: 40 },
-          { name: "Carla", shareWeight: 100 },
+          // Carla divide solo qualche spesa: il form della nuova spesa non la
+          // spunta da sola, la si aggiunge quando c'è anche lei.
+          { name: "Carla", shareWeight: 100, defaultSelected: false },
         ],
       },
     },

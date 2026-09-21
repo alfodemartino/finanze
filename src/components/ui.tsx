@@ -117,6 +117,26 @@ export function Select(props: ComponentProps<"select">) {
   return <select {...props} className={`${inputClass} ${props.className ?? ""}`} />;
 }
 
+/**
+ * Casella di spunta con la sua etichetta: stanno nella stessa `label`, così
+ * si spunta anche toccando il testo — su un telefono il quadratino da solo è
+ * un bersaglio minuscolo. Quel che le si passa dentro resta figlio della
+ * riga, non impacchettato: chi vuole più pezzi affiancati li separa il
+ * `gap`.
+ */
+export function Checkbox({
+  children,
+  className = "",
+  ...props
+}: ComponentProps<"input"> & { children: ReactNode }) {
+  return (
+    <label className={`flex items-center gap-2.5 text-[15px] ${className}`}>
+      <input type="checkbox" {...props} className="size-[18px] shrink-0 accent-tint" />
+      {children}
+    </label>
+  );
+}
+
 export function Alert({ tone, children }: { tone: "error" | "success" | "info"; children: ReactNode }) {
   const tones = {
     error: "bg-negative/10 text-negative",

@@ -5,10 +5,16 @@ import { createExpenseAction } from "@/app/actions/expenses";
 import { emptyActionState } from "@/lib/action-state";
 import { formatCents, parseAmountToCents } from "@/lib/money";
 import { computeSplits, SplitError, type SplitMode } from "@/lib/split";
-import { Alert, Field, Input, Select } from "@/components/ui";
+import { defaultParticipantIds } from "@/lib/members";
+import { Alert, Checkbox, Field, Input, Select } from "@/components/ui";
 import { SubmitButton } from "@/components/SubmitButton";
 
-export type FormMember = { id: string; name: string; shareWeight: number };
+export type FormMember = {
+  id: string;
+  name: string;
+  shareWeight: number;
+  defaultSelected: boolean;
+};
 
 const modeHints: Record<SplitMode, string> = {
   EQUAL: "L'importo viene diviso in parti uguali fra i partecipanti selezionati.",
@@ -31,7 +37,7 @@ export function ExpenseForm({
 
   const [amount, setAmount] = useState("");
   const [splitMode, setSplitMode] = useState<SplitMode>("EQUAL");
-  const [selected, setSelected] = useState<string[]>(() => members.map((m) => m.id));
+  const [selected, setSelected] = useState<string[]>(() => defaultParticipantIds(members));
   const [exact, setExact] = useState<Record<string, string>>({});
 
   const totalCents = parseAmountToCents(amount) ?? 0;
@@ -135,22 +141,20 @@ export function ExpenseForm({
               key={member.id}
               className="flex flex-wrap items-center gap-3 rounded-control bg-fill px-3.5 py-2.5"
             >
-              <label className="flex flex-1 items-center gap-2.5 text-[15px]">
-                <input
-                  type="checkbox"
-                  name="participants"
-                  value={member.id}
-                  checked={checked}
-                  onChange={() => toggle(member.id)}
-                  className="size-[18px] accent-tint"
-                />
+              <Checkbox
+                name="participants"
+                value={member.id}
+                checked={checked}
+                onChange={() => toggle(member.id)}
+                className="flex-1"
+              >
                 <span className="font-medium">{member.name}</span>
                 {splitMode === "SHARES" && (
                   <span className="text-[12px] text-label-secondary">
                     quota {member.shareWeight}
                   </span>
                 )}
-              </label>
+              </Checkbox>
 
               {splitMode === "EXACT" && checked && (
                 <Input

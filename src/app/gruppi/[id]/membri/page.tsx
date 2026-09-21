@@ -31,6 +31,7 @@ export default async function MembersPage({ params }: { params: Promise<{ id: st
                 role: member.role,
                 active: member.active,
                 hasAccount: member.userId !== null,
+                defaultSelected: member.defaultSelected,
               }}
             />
           ))}
