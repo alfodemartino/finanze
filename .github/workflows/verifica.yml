@@ -1,0 +1,37 @@
+# I quattro controlli che CLAUDE.md chiede prima di ogni push, eseguiti anche
+# qui: finché dipendevano solo da chi apriva la pull request, bastava
+# dimenticarsene una volta per portare su `main` codice che non compila.
+name: Verifica
+
+on:
+  pull_request:
+  push:
+    branches-ignore:
+      # Su `main` arriva solo quello che una pull request ha già verificato.
+      - main
+
+jobs:
+  verifica:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # La stessa versione del Dockerfile: un controllo che passa qui e fallisce
+      # nel container di produzione non serve a niente.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # `npm ci` e non `npm install`: qui si verifica esattamente ciò che
+      # dichiara il lock, senza aggiornamenti silenziosi.
+      - run: npm ci
+
+      - run: npm test
+      - run: npm run typecheck
+      - run: npm run lint
+
+      # Il build non tocca il database: le pagine sono tutte dinamiche, quindi
+      # non serve nessuna variabile d'ambiente.
+      - run: npm run build
