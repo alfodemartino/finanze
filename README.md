@@ -155,7 +155,11 @@ un IP dinamico o sotto CGNAT. Il certificato HTTPS lo gestisce Cloudflare.
 ```
 
 Aggiorna il codice, ricostruisce l'immagine, applica le migrazioni e riavvia.
-**Il merge su `main` non è più un rilascio:** il rilascio è questo script.
+
+Finché dura la migrazione da Vercel i rilasci sono **due**, ed è bene tenerlo a
+mente: il merge su `main` fa ridistribuire Vercel da solo, mentre la macchina di
+casa aspetta questo script. Quando Vercel sarà spento resterà solo
+`./deploy.sh`, e questo paragrafo andrà riscritto.
 
 Le migrazioni non girano durante il build né all'avvio del server: sono un passo
 separato (`docker compose run --rm migrate`, che esegue `prisma migrate deploy`).
@@ -321,7 +325,15 @@ docker-compose.yml        Servizi sulla macchina di casa (app, migrate, tunnel)
 deploy.sh                 Rilascio di una nuova versione
 backup-db.sh              Copia del database, lanciata dal timer systemd
 deploy/                   Unit systemd per la copia giornaliera
+.github/workflows/        Test, typecheck, lint e build a ogni pull request
+.claude/                  Hook che prepara l'ambiente delle sessioni sul web
 ```
+
+Test, typecheck, lint e build girano da soli a ogni pull request
+(`.github/workflows/verifica.yml`), con la stessa versione di Node del
+`Dockerfile` e sul codice già unito a `main`. Resta comunque buona regola
+lanciarli in locale prima di spingere: l'errore si vede subito, invece che
+qualche minuto dopo.
 
 ## Note tecniche
 
