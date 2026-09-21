@@ -329,10 +329,11 @@ deploy/                   Unit systemd per la copia giornaliera
 .claude/                  Hook che prepara l'ambiente delle sessioni sul web
 ```
 
-Test, typecheck, lint e build girano da soli a ogni push su un branch e a ogni
-pull request (`.github/workflows/verifica.yml`), con la stessa versione di Node
-del `Dockerfile`. Resta comunque buona regola lanciarli in locale prima di
-spingere: l'errore si vede subito, invece che qualche minuto dopo.
+Test, typecheck, lint e build girano da soli a ogni pull request
+(`.github/workflows/verifica.yml`), con la stessa versione di Node del
+`Dockerfile` e sul codice già unito a `main`. Resta comunque buona regola
+lanciarli in locale prima di spingere: l'errore si vede subito, invece che
+qualche minuto dopo.
 
 ## Note tecniche
 

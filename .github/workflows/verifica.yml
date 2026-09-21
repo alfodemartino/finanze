@@ -3,12 +3,17 @@
 # dimenticarsene una volta per portare su `main` codice che non compila.
 name: Verifica
 
-on:
-  pull_request:
-  push:
-    branches-ignore:
-      # Su `main` arriva solo quello che una pull request ha già verificato.
-      - main
+# Solo sulle pull request, e non anche sui push al branch: su `main` si arriva
+# sempre da una PR, quindi il secondo trigger raddoppierebbe le corse sullo
+# stesso commit senza verificare niente di più. Quello che conta è proprio la
+# corsa della PR, perché prova il codice **già unito** a `main`.
+on: pull_request
+
+# Se arrivano altri commit mentre una corsa è in piedi, quella vecchia parla di
+# codice superato: si annulla invece di aspettarla.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   verifica:
