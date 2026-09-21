@@ -150,6 +150,7 @@ export async function addMemberAction(
   const parsed = memberSchema.safeParse({
     name: formData.get("name"),
     shareWeight: formData.get("shareWeight") || 100,
+    defaultSelected: formData.get("defaultSelected"),
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Dati non validi." };
@@ -167,11 +168,14 @@ export async function addMemberAction(
       groupId,
       name: parsed.data.name,
       shareWeight: parsed.data.shareWeight,
+      defaultSelected: parsed.data.defaultSelected,
     },
   });
 
-  revalidatePath(`/gruppi/${groupId}`);
-  revalidatePath(`/gruppi/${groupId}/membri`);
+  // `layout` invalida tutte le pagine del gruppo, non solo questa: l'elenco
+  // dei membri alimenta anche il form della nuova spesa e i saldi, e la
+  // preselezione appena scelta deve valere subito lì.
+  revalidatePath(`/gruppi/${groupId}`, "layout");
   return { success: `${parsed.data.name} è stato aggiunto al gruppo.` };
 }
 
@@ -192,6 +196,7 @@ export async function updateMemberAction(
   const parsed = memberSchema.safeParse({
     name: formData.get("name"),
     shareWeight: formData.get("shareWeight"),
+    defaultSelected: formData.get("defaultSelected"),
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Dati non validi." };
@@ -199,11 +204,14 @@ export async function updateMemberAction(
 
   await prisma.member.update({
     where: { id: memberId },
-    data: { name: parsed.data.name, shareWeight: parsed.data.shareWeight },
+    data: {
+      name: parsed.data.name,
+      shareWeight: parsed.data.shareWeight,
+      defaultSelected: parsed.data.defaultSelected,
+    },
   });
 
-  revalidatePath(`/gruppi/${groupId}`);
-  revalidatePath(`/gruppi/${groupId}/membri`);
+  revalidatePath(`/gruppi/${groupId}`, "layout");
   return { success: "Membro aggiornato." };
 }
 
@@ -240,8 +248,7 @@ export async function deactivateMemberAction(
     await prisma.member.update({ where: { id: memberId }, data: { active: false } });
   }
 
-  revalidatePath(`/gruppi/${groupId}`);
-  revalidatePath(`/gruppi/${groupId}/membri`);
+  revalidatePath(`/gruppi/${groupId}`, "layout");
   return { success: `${member.name} non partecipa più alle nuove spese.` };
 }
 

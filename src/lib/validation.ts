@@ -14,6 +14,13 @@ export const groupSchema = z.object({
   currency: z.string().trim().length(3).toUpperCase().default("EUR"),
 });
 
+/**
+ * Una casella di spunta non compare affatto nei dati del form quando è
+ * vuota, e vale `"on"` quando è spuntata: `null` e `undefined` sono quindi
+ * un «no», non un dato mancante.
+ */
+const checkboxSchema = z.preprocess((value) => value === "on" || value === "true", z.boolean());
+
 export const memberSchema = z.object({
   name: z.string().trim().min(1, "Il nome del membro è obbligatorio.").max(60),
   shareWeight: z.coerce
@@ -21,6 +28,7 @@ export const memberSchema = z.object({
     .int("La quota deve essere un numero intero.")
     .min(0, "La quota non può essere negativa.")
     .max(1000, "La quota massima è 1000."),
+  defaultSelected: checkboxSchema,
 });
 
 export const inviteCodeSchema = z

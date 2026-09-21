@@ -11,6 +11,9 @@ necessari a pareggiare i conti.
   (es. un figlio) che partecipano comunque alla divisione.
 - **Quote per membro** — ogni membro ha un peso (`shareWeight`): con 60 e 40 le
   spese divise «per quote» seguono un 60/40, utile quando i redditi sono diversi.
+- **Partecipazione di default** — l'amministratore decide chi parte già spuntato
+  fra i partecipanti di una nuova spesa. Chi divide solo qualche spesa resta
+  fuori dalla preselezione e si aggiunge quando serve.
 - **Spese** — descrizione, importo, data, chi ha pagato e come si divide: in
   parti uguali, per quote o con importi esatti. Un'anteprima mostra le quote
   mentre si compila il form.

@@ -95,15 +95,19 @@ enum MemberRole {
 /// `userId` è opzionale: si possono aggiungere familiari senza account
 /// (es. un figlio) che partecipano comunque alla divisione.
 model Member {
-  id          String     @id @default(cuid())
-  groupId     String
-  userId      String?
-  name        String
-  role        MemberRole @default(MEMBER)
+  id              String     @id @default(cuid())
+  groupId         String
+  userId          String?
+  name            String
+  role            MemberRole @default(MEMBER)
   /// Peso usato dalla ripartizione per quote (es. 60 e 40 per un 60/40).
-  shareWeight Int        @default(100)
-  active      Boolean    @default(true)
-  joinedAt    DateTime   @default(now())
+  shareWeight     Int        @default(100)
+  /// Se il membro parte già spuntato fra i partecipanti di una nuova spesa.
+  /// Lo decide l'amministratore del gruppo: serve per chi partecipa solo
+  /// ogni tanto (un ospite, un familiare che divide poche spese).
+  defaultSelected Boolean    @default(true)
+  active          Boolean    @default(true)
+  joinedAt        DateTime   @default(now())
 
   group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
   user  User? @relation(fields: [userId], references: [id], onDelete: SetNull)

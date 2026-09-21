@@ -29,6 +29,7 @@ export default async function ExpensesPage({ params }: { params: Promise<{ id: s
             id: member.id,
             name: member.name,
             shareWeight: member.shareWeight,
+            defaultSelected: member.defaultSelected,
           }))}
           defaultPayerId={group.viewer.id}
         />
