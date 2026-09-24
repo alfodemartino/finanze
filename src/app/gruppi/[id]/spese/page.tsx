@@ -1,8 +1,15 @@
 import { notFound, redirect } from "next/navigation";
 import { currentUser } from "@/lib/auth";
 import { getGroupForUser, listExpenses } from "@/lib/groups";
+import { expenseSearchText } from "@/lib/search";
 import { ExpenseForm } from "@/components/forms/ExpenseForm";
 import { ExpenseList } from "@/components/ExpenseList";
+import {
+  ExpenseSearch,
+  ExpenseSearchEmpty,
+  ExpenseSearchField,
+  ExpenseSearchSummary,
+} from "@/components/ExpenseSearch";
 import { Card } from "@/components/ui";
 
 export default async function ExpensesPage({ params }: { params: Promise<{ id: string }> }) {
@@ -35,19 +42,28 @@ export default async function ExpensesPage({ params }: { params: Promise<{ id: s
         />
       </Card>
 
-      <Card title="Storico spese" description={`${expenses.length} spese registrate.`} flush>
-        <ExpenseList
-          expenses={expenses}
-          currency={group.currency}
-          groupId={group.id}
-          deletable
-          payerOptions={
-            canManage
-              ? activeMembers.map((member) => ({ id: member.id, name: member.name }))
-              : undefined
-          }
-        />
-      </Card>
+      <ExpenseSearch
+        items={expenses.map((expense) => ({
+          id: expense.id,
+          text: expenseSearchText(expense, group.currency),
+        }))}
+      >
+        <Card title="Storico spese" description={<ExpenseSearchSummary />} flush>
+          {expenses.length > 0 && <ExpenseSearchField />}
+          <ExpenseList
+            expenses={expenses}
+            currency={group.currency}
+            groupId={group.id}
+            deletable
+            payerOptions={
+              canManage
+                ? activeMembers.map((member) => ({ id: member.id, name: member.name }))
+                : undefined
+            }
+          />
+          <ExpenseSearchEmpty />
+        </Card>
+      </ExpenseSearch>
     </div>
   );
 }

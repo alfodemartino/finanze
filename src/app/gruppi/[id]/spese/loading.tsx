@@ -1,5 +1,6 @@
 import { SkeletonForm, SkeletonPage, SkeletonRows } from "@/components/Skeletons";
 import { Card, Skeleton } from "@/components/ui";
+import { ExpenseSearchField } from "@/components/ExpenseSearch";
 
 /** Scheda «Spese»: il modulo della nuova spesa e lo storico accanto. */
 export default function Loading() {
@@ -13,6 +14,8 @@ export default function Loading() {
       {/* La descrizione della card è un conteggio, quindi tocca anche a lei un
           grigio: senza, all'arrivo dei dati il titolo scivolerebbe in giù. */}
       <Card title="Storico spese" description={<Skeleton className="h-3 w-32" />} flush>
+        {/* Il campo di ricerca non dipende dai dati: c'è già, ma spento. */}
+        <ExpenseSearchField />
         <SkeletonRows count={5} />
       </Card>
     </SkeletonPage>

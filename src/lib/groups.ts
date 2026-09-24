@@ -188,8 +188,12 @@ export async function getUserOverview(userId: string): Promise<CurrencyOverview[
   return buildOverview(input);
 }
 
-/** Spese del gruppo, dalla più recente. */
-export async function listExpenses(groupId: string, take = 50) {
+/**
+ * Spese del gruppo, dalla più recente. Senza `take` arrivano tutte: lo storico
+ * le vuole tutte perché la ricerca, che filtra nel browser, deve poter trovare
+ * anche le più vecchie.
+ */
+export async function listExpenses(groupId: string, take?: number) {
   return prisma.expense.findMany({
     where: { groupId },
     include: {
