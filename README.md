@@ -17,6 +17,9 @@ necessari a pareggiare i conti.
 - **Spese** — descrizione, importo, data, chi ha pagato e come si divide: in
   parti uguali, per quote o con importi esatti. Un'anteprima mostra le quote
   mentre si compila il form.
+- **Ricerca nello storico** — una casella sopra le spese le filtra mentre si
+  scrive: descrizione, nota, chi ha pagato, importo e data, senza badare a
+  maiuscole e accenti. Più parole vanno trovate tutte, in qualsiasi ordine.
 - **Saldi** — per ogni persona: quanto ha anticipato, quanto è a suo carico e
   quanto le resta da dare o ricevere.
 - **Riepilogo su tutti i gruppi** — in cima a «I miei gruppi»: quanto si deve
