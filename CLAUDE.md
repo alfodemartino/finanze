@@ -10,11 +10,10 @@ Si sviluppa su un branch dedicato e **si apre sempre una pull request**: il
 merge su `main` avviene dalla PR, non con un merge locale. La history del
 progetto è fatta di commit `Merge pull request #N: …` e va mantenuta così.
 
-Il deploy è in corso di migrazione da Vercel a una macchina di casa, e finché
-dura la transizione **un merge su `main` va trattato come un rilascio**: Vercel
-ridistribuisce da solo a ogni push. Quando Vercel sarà spento il rilascio
-diventerà esplicito — `./deploy.sh` sulla macchina — e questa riga andrà
-riscritta.
+L'app gira solo sulla macchina di casa e il rilascio è esplicito: un merge su
+`main` non mette in produzione niente finché qualcuno non lancia `./deploy.sh`
+sulla macchina. Un merge resta comunque la versione che il prossimo rilascio
+prenderà, quindi su `main` va solo ciò che è pronto.
 
 Commit, PR, commenti nel codice e testi dell'interfaccia sono **in italiano**.
 Il messaggio di commit spiega *perché* si cambia qualcosa, non solo cosa.

@@ -165,10 +165,9 @@ un IP dinamico o sotto CGNAT. Il certificato HTTPS lo gestisce Cloudflare.
 
 Aggiorna il codice, ricostruisce l'immagine, applica le migrazioni e riavvia.
 
-Finché dura la migrazione da Vercel i rilasci sono **due**, ed è bene tenerlo a
-mente: il merge su `main` fa ridistribuire Vercel da solo, mentre la macchina di
-casa aspetta questo script. Quando Vercel sarà spento resterà solo
-`./deploy.sh`, e questo paragrafo andrà riscritto.
+È l'unico modo di rilasciare: il merge su `main` non distribuisce niente da
+solo, e la macchina di casa resta sulla versione precedente finché non si
+lancia lo script.
 
 Le migrazioni non girano durante il build né all'avvio del server: sono un passo
 separato (`docker compose run --rm migrate`, che esegue `prisma migrate deploy`).
