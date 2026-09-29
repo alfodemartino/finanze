@@ -166,6 +166,20 @@ export function SkeletonOverview() {
         <SkeletonLines count={3} />
       </Card>
 
+      {/* Il periodo lo sceglie l'indirizzo, che qui non arriva: tocca al grigio
+          anche il controllo con le frecce. Titolo e descrizione restano veri. */}
+      <Card
+        title="Spese per categoria"
+        description="Quanto ha speso il gruppo, rimborsi esclusi."
+        flush
+      >
+        <div className="flex items-center justify-between gap-3 border-b border-separator px-4 py-3.5">
+          <Skeleton className="h-8 w-44 rounded-control" />
+          <Skeleton className="h-5 w-40" />
+        </div>
+        <SkeletonRows count={3} icon />
+      </Card>
+
       <Card title="Ultime spese" flush actions={<SkeletonAction />}>
         <SkeletonRows count={3} icon />
       </Card>
