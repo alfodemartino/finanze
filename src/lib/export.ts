@@ -14,11 +14,13 @@ import {
   type XlsxColumn,
   type XlsxValue,
 } from "@/lib/xlsx";
+import { CATEGORIES, type ExpenseCategory } from "@/lib/categories";
 
 export const EXPORT_COLUMNS: XlsxColumn[] = [
   { header: "DATA", width: 12, format: "date" },
   { header: "TIPO OPERAZIONE", width: 18 },
   { header: "DESCRIZIONE OPERAZIONE", width: 36 },
+  { header: "CATEGORIA", width: 22 },
   { header: "PAGATO DA", width: 18 },
   { header: "PAGATO A", width: 32 },
   { header: "NOTE", width: 28 },
@@ -30,6 +32,7 @@ export type ExportExpense = {
   description: string;
   amountCents: number;
   note: string | null;
+  category: ExpenseCategory | null;
   payer: { name: string };
   /** I membri fra cui la spesa è divisa: sono loro a beneficiarne. */
   splits: { member: { name: string } }[];
@@ -63,6 +66,7 @@ export type ExportRow = {
   date: Date;
   type: "Spesa" | "Rimborso";
   description: string;
+  category: string;
   paidBy: string;
   paidTo: string;
   note: string;
@@ -87,6 +91,9 @@ export function buildExportRows({
       date: expense.date,
       type: "Spesa",
       description: expense.description,
+      // Vuota, e non «Senza categoria», come la nota che manca: nei filtri del
+      // foglio le celle vuote stanno già tutte insieme.
+      category: expense.category ? CATEGORIES[expense.category].label : "",
       paidBy: expense.payer.name,
       // Una spesa si paga a un negozio, non a un membro: qui vanno le persone
       // per cui è stata anticipata, cioè quelle fra cui è divisa.
@@ -100,6 +107,8 @@ export function buildExportRows({
       // Un rimborso non ha una descrizione sua nel database, e ripetere qui
       // i due nomi vorrebbe dire copiare le due colonne che seguono.
       description: "",
+      // Un rimborso non è una spesa: non ha un genere.
+      category: "",
       paidBy: settlement.from.name,
       paidTo: settlement.to.name,
       note: settlement.note ?? "",
@@ -114,9 +123,9 @@ export function buildExportRows({
 
 /**
  * Lo specchietto sta a destra della tabella: questa è la sua prima colonna.
- * La tabella arriva alla G, la H resta vuota e fa da margine.
+ * La tabella arriva alla H, la I resta vuota e fa da margine.
  */
-export const SUMMARY_START_COLUMN = 8;
+export const SUMMARY_START_COLUMN = 9;
 
 /** Larghezza delle quattro colonne dello specchietto. */
 export const SUMMARY_WIDTHS = [26, 15, 15, 15];
@@ -184,7 +193,16 @@ export function buildSummaryRows({
 
 /** Le righe nell'ordine delle colonne del foglio. */
 function toCells(row: ExportRow): XlsxValue[] {
-  return [row.date, row.type, row.description, row.paidBy, row.paidTo, row.note, row.amountCents];
+  return [
+    row.date,
+    row.type,
+    row.description,
+    row.category,
+    row.paidBy,
+    row.paidTo,
+    row.note,
+    row.amountCents,
+  ];
 }
 
 /**

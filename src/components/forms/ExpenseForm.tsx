@@ -6,8 +6,11 @@ import { emptyActionState } from "@/lib/action-state";
 import { formatCents, parseAmountToCents } from "@/lib/money";
 import { computeSplits, SplitError, type SplitMode } from "@/lib/split";
 import { defaultParticipantIds } from "@/lib/members";
+import { suggestCategory, type CategoryHistory, type ExpenseCategory } from "@/lib/categories";
 import { Alert, Checkbox, Field, Input, Select } from "@/components/ui";
 import { SubmitButton } from "@/components/SubmitButton";
+import { CategoryIcon } from "@/components/CategoryIcon";
+import { CategoryOptions } from "@/components/forms/CategoryForms";
 
 export type FormMember = {
   id: string;
@@ -27,13 +30,51 @@ export function ExpenseForm({
   currency,
   members,
   defaultPayerId,
+  categoryHistory,
 }: {
   groupId: string;
   currency: string;
   members: FormMember[];
   defaultPayerId: string;
+  /** Come il gruppo ha categorizzato le sue spese: vedi `buildCategoryHistory`. */
+  categoryHistory: CategoryHistory;
 }) {
   const [state, formAction] = useActionState(createExpenseAction, emptyActionState);
+
+  // La descrizione resta un campo libero: qui se ne tiene solo una copia, per
+  // proporre la categoria mentre si scrive.
+  const [description, setDescription] = useState("");
+  // `null` finché la categoria segue il suggerimento; una volta scelta a mano
+  // resta quella, anche cambiando la descrizione. «Senza categoria» è `""`,
+  // una scelta come le altre.
+  const [chosenCategory, setChosenCategory] = useState<string | null>(null);
+
+  // A ogni invio concluso, riuscito o no, React svuota i campi liberi del
+  // form, descrizione compresa, senza passare da un evento che si possa
+  // ascoltare. Il segnale è la risposta nuova dell'azione: arrivata quella,
+  // suggerimento e scelta fatta a mano tornano al punto di partenza insieme
+  // alla descrizione.
+  const [answeredState, setAnsweredState] = useState(state);
+  if (state !== answeredState) {
+    setAnsweredState(state);
+    setDescription("");
+    setChosenCategory(null);
+  }
+
+  const suggestedCategory = useMemo(
+    () => suggestCategory(description, categoryHistory),
+    [description, categoryHistory],
+  );
+  const category = chosenCategory ?? suggestedCategory ?? "";
+
+  const categoryHint =
+    chosenCategory !== null
+      ? null
+      : suggestedCategory
+        ? "Riconosciuta dalla descrizione: puoi cambiarla."
+        : description.trim()
+          ? "Nessuna categoria riconosciuta: sceglila tu."
+          : "Si propone da sola mentre scrivi la descrizione.";
 
   const [amount, setAmount] = useState("");
   const [splitMode, setSplitMode] = useState<SplitMode>("EQUAL");
@@ -85,7 +126,31 @@ export function ExpenseForm({
       {state.success && <Alert tone="success">{state.success}</Alert>}
 
       <Field label="Descrizione">
-        <Input name="description" required maxLength={120} placeholder="Spesa supermercato" />
+        <Input
+          name="description"
+          required
+          maxLength={120}
+          placeholder="Spesa supermercato"
+          onChange={(event) => setDescription(event.target.value)}
+        />
+      </Field>
+
+      <Field label="Categoria" hint={categoryHint}>
+        <span className="relative block">
+          <CategoryIcon
+            category={(category || null) as ExpenseCategory | null}
+            size="sm"
+            className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2"
+          />
+          <Select
+            name="category"
+            value={category}
+            onChange={(event) => setChosenCategory(event.target.value)}
+            className="pl-11"
+          >
+            <CategoryOptions />
+          </Select>
+        </span>
       </Field>
 
       <div className="grid gap-4 sm:grid-cols-2">

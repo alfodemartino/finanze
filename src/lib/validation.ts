@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { CATEGORY_IDS } from "@/lib/categories";
 
 export const credentialsSchema = z.object({
   email: z.string().trim().toLowerCase().email("Indirizzo email non valido."),
@@ -38,3 +39,12 @@ export const inviteCodeSchema = z
   .regex(/^[A-Z0-9]{6,10}$/, "Codice di invito non valido.");
 
 export const splitModeSchema = z.enum(["EQUAL", "SHARES", "EXACT"]);
+
+/**
+ * La categoria scelta nel form: vuota vuol dire «senza categoria» (`null`),
+ * che è una scelta valida quanto le altre.
+ */
+export const categoryFieldSchema = z.union([
+  z.literal("").transform(() => null),
+  z.enum(CATEGORY_IDS),
+]);

@@ -1,4 +1,8 @@
 import { centsToInput, formatCents } from "@/lib/money";
+import { categoryLabel, type ExpenseCategory } from "@/lib/categories";
+import { normalizeForSearch } from "@/lib/text";
+
+export { normalizeForSearch };
 
 /**
  * Ricerca testuale negli elenchi: si decide sul server che cosa di una voce è
@@ -8,14 +12,6 @@ import { centsToInput, formatCents } from "@/lib/money";
  * la ricerca in parole: una voce corrisponde se le contiene tutte, in qualsiasi
  * ordine. Così «luce agosto» trova «Bolletta luce di agosto».
  */
-
-/** Minuscolo e senza accenti: la forma in cui due testi si confrontano. */
-export function normalizeForSearch(text: string): string {
-  return text
-    .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "")
-    .toLowerCase();
-}
 
 /** Il testo in cui cercare, fatto dei pezzi di una voce: quelli vuoti si saltano. */
 export function buildSearchText(parts: (string | null | undefined)[]): string {
@@ -38,12 +34,14 @@ export type SearchableExpense = {
   amountCents: number;
   date: Date;
   note: string | null;
+  category: ExpenseCategory | null;
   payer: { name: string };
 };
 
 /**
  * Il testo in cui si cerca una spesa: quello che la sua riga mostra, tranne i
- * partecipanti. Cercando un nome si trovano così le spese pagate da quella
+ * partecipanti. C'è anche la categoria, così «bollette» trova anche la spesa
+ * che si chiama solo «Enel». Cercando un nome si trovano così le spese pagate da quella
  * persona, non tutte quelle a cui partecipa, che sarebbero quasi tutte.
  *
  * Importo e data compaiono in più forme, perché si cercano come si scrivono:
@@ -61,5 +59,8 @@ export function expenseSearchText(expense: SearchableExpense, currency: string):
     new Intl.DateTimeFormat("it-IT", { dateStyle: "long" }).format(expense.date),
     expense.payer.name,
     expense.note,
+    // Solo le categorie vere: «senza categoria» farebbe trovare a «senza»
+    // mezzo storico.
+    expense.category && categoryLabel(expense.category),
   ]);
 }

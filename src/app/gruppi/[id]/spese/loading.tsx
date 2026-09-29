@@ -7,8 +7,9 @@ export default function Loading() {
   return (
     <SkeletonPage className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
       <Card title="Nuova spesa">
-        {/* Descrizione, importo, data, chi ha pagato, come si divide, nota. */}
-        <SkeletonForm fields={6} />
+        {/* Descrizione, categoria, importo, data, chi ha pagato, come si
+            divide, nota. */}
+        <SkeletonForm fields={7} />
       </Card>
 
       {/* La descrizione della card è un conteggio, quindi tocca anche a lei un
@@ -16,7 +17,7 @@ export default function Loading() {
       <Card title="Storico spese" description={<Skeleton className="h-3 w-32" />} flush>
         {/* Il campo di ricerca non dipende dai dati: c'è già, ma spento. */}
         <ExpenseSearchField />
-        <SkeletonRows count={5} />
+        <SkeletonRows count={5} icon />
       </Card>
     </SkeletonPage>
   );

@@ -79,6 +79,15 @@ palette nei tre casi (chiaro, scuro di sistema, scuro scelto) e `@theme inline`
 le espone come utility. `inline` non è un dettaglio: senza, Tailwind copierebbe
 il valore e il tema smetterebbe di cambiare.
 
+L'unica eccezione sono le **icone delle categorie**: glifo bianco su un cerchio
+del colore della categoria, come i Promemoria di iOS, perché servono a
+riconoscerla a colpo d'occhio. Anche lì si passa dal ruolo
+(`bg-category-groceries`, dichiarate in `@theme inline`), e le tinte
+(`--ui-cat-*`) escludono rosso, verde, blu e rosa, che hanno già un
+significato. Una categoria nuova vuole un valore nell'enum dello schema, una
+voce in `src/lib/categories.ts`, il suo colore in `globals.css` e il glifo in
+`CategoryIcon`.
+
 `dark:` resta definito con `@custom-variant` per i pochi casi che non passano da
 un token: vale sotto `data-theme="dark"` e, solo quando l'utente non ha scelto,
 con `prefers-color-scheme: dark`. La scelta del tema sta in `src/lib/theme.ts` e

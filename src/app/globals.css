@@ -49,6 +49,23 @@
   --ui-tint: #007aff;
   --ui-positive: #248a3d;
   --ui-negative: #d70015;
+
+  /*
+   * Le tinte delle icone delle categorie: i colori di sistema di iOS, con i
+   * valori delle linee guida di Apple. Mancano apposta rosso e verde (sono del
+   * denaro), blu (è di ciò che si tocca) e rosa (troppo vicino al rosso). I
+   * componenti non le usano per nome: passano dalle utility per categoria
+   * dichiarate in `@theme inline`.
+   */
+  --ui-cat-orange: rgb(255 141 40);
+  --ui-cat-yellow: rgb(255 204 0);
+  --ui-cat-brown: rgb(172 127 94);
+  --ui-cat-mint: rgb(0 200 179);
+  --ui-cat-teal: rgb(0 195 208);
+  --ui-cat-cyan: rgb(0 192 232);
+  --ui-cat-indigo: rgb(97 85 245);
+  --ui-cat-purple: rgb(203 48 224);
+  --ui-cat-gray: rgb(142 142 147);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -68,6 +85,16 @@
     --ui-tint: #0a84ff;
     --ui-positive: #30d158;
     --ui-negative: #ff453a;
+
+    --ui-cat-orange: rgb(255 146 48);
+    --ui-cat-yellow: rgb(255 214 0);
+    --ui-cat-brown: rgb(183 138 102);
+    --ui-cat-mint: rgb(0 218 195);
+    --ui-cat-teal: rgb(0 210 224);
+    --ui-cat-cyan: rgb(60 211 254);
+    --ui-cat-indigo: rgb(109 124 255);
+    --ui-cat-purple: rgb(219 52 242);
+    --ui-cat-gray: rgb(99 99 102);
   }
 }
 
@@ -87,6 +114,16 @@ html[data-theme="dark"] {
   --ui-tint: #0a84ff;
   --ui-positive: #30d158;
   --ui-negative: #ff453a;
+
+  --ui-cat-orange: rgb(255 146 48);
+  --ui-cat-yellow: rgb(255 214 0);
+  --ui-cat-brown: rgb(183 138 102);
+  --ui-cat-mint: rgb(0 218 195);
+  --ui-cat-teal: rgb(0 210 224);
+  --ui-cat-cyan: rgb(60 211 254);
+  --ui-cat-indigo: rgb(109 124 255);
+  --ui-cat-purple: rgb(219 52 242);
+  --ui-cat-gray: rgb(99 99 102);
 }
 
 /*
@@ -114,6 +151,25 @@ html[data-theme="dark"] {
   --color-tint: var(--ui-tint);
   --color-positive: var(--ui-positive);
   --color-negative: var(--ui-negative);
+
+  /*
+   * Un colore per categoria: è il ruolo. Due categorie possono condividere la
+   * tinta (sono 14 per 9 tinte), e a distinguerle resta il glifo.
+   */
+  --color-category-groceries: var(--ui-cat-orange);
+  --color-category-restaurants: var(--ui-cat-yellow);
+  --color-category-home: var(--ui-cat-brown);
+  --color-category-utilities: var(--ui-cat-cyan);
+  --color-category-transport: var(--ui-cat-indigo);
+  --color-category-travel: var(--ui-cat-teal);
+  --color-category-health: var(--ui-cat-mint);
+  --color-category-leisure: var(--ui-cat-purple);
+  --color-category-clothing: var(--ui-cat-purple);
+  --color-category-education: var(--ui-cat-indigo);
+  --color-category-pets: var(--ui-cat-brown);
+  --color-category-gifts: var(--ui-cat-yellow);
+  --color-category-taxes: var(--ui-cat-gray);
+  --color-category-other: var(--ui-cat-gray);
 
   /* I due raggi di iOS: i controlli sono più stretti dei riquadri. */
   --radius-control: 0.625rem;

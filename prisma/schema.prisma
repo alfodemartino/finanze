@@ -134,16 +134,39 @@ enum SplitMode {
   EXACT
 }
 
+/// Di che genere è una spesa. L'elenco è fisso: etichette, icone, colori e
+/// parole chiave del riconoscimento automatico stanno in `src/lib/categories.ts`,
+/// e un test verifica che i due elenchi coincidano.
+enum ExpenseCategory {
+  GROCERIES
+  RESTAURANTS
+  HOME
+  UTILITIES
+  TRANSPORT
+  TRAVEL
+  HEALTH
+  LEISURE
+  CLOTHING
+  EDUCATION
+  PETS
+  GIFTS
+  TAXES
+  OTHER
+}
+
 model Expense {
-  id          String    @id @default(cuid())
+  id          String           @id @default(cuid())
   groupId     String
   description String
   amountCents Int
-  date        DateTime  @default(now())
-  splitMode   SplitMode @default(EQUAL)
+  date        DateTime         @default(now())
+  splitMode   SplitMode        @default(EQUAL)
   payerId     String
   note        String?
-  createdAt   DateTime  @default(now())
+  /// Vuota vuol dire «senza categoria»: le spese registrate prima che le
+  /// categorie esistessero, e quelle per cui nessuno ne ha scelta una.
+  category    ExpenseCategory?
+  createdAt   DateTime         @default(now())
 
   group  Group          @relation(fields: [groupId], references: [id], onDelete: Cascade)
   payer  Member         @relation("ExpensePayer", fields: [payerId], references: [id], onDelete: Restrict)
