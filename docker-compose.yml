@@ -19,8 +19,8 @@ x-logging: &logging
     max-file: "3"
 
 services:
-  # Postgres locale. Non pubblica nessuna porta: lo raggiungono solo gli altri
-  # servizi, sulla rete interna di Compose. Per un `psql` a mano:
+  # Postgres locale. Gli altri servizi lo raggiungono sulla rete interna di
+  # Compose, all'host `db`. Per un `psql` a mano:
   # `docker compose exec db psql -U finanze`.
   #
   # `PG_IMAGE` è la stessa che usa `backup`, di proposito: `pg_dump` non legge
@@ -34,6 +34,13 @@ services:
       POSTGRES_USER: finanze
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?imposta POSTGRES_PASSWORD nel .env}
       POSTGRES_DB: finanze
+    ports:
+      # Per un client SQL dalla rete di casa. La porta si lega a un indirizzo
+      # preciso, mai a tutti: senza `DB_LAN_IP` resta su 127.0.0.1, cioè
+      # raggiungibile solo dall'LXC stesso (o con un tunnel SSH), e con
+      # l'IP di rete locale dell'LXC diventa visibile alla LAN e basta. Il
+      # firewall dell'LXC non la filtra: Docker scrive le sue regole prima.
+      - "${DB_LAN_IP:-127.0.0.1}:5432:5432"
     volumes:
       # Dalla 18 l'immagine tiene i dati in una sottocartella versionata di
       # /var/lib/postgresql: montare il volume su `.../data`, come si faceva

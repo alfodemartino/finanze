@@ -87,7 +87,8 @@ da solo nella pagina di accesso. L'URL di callback da registrare su Google è
 L'applicazione gira in un container Docker su una macchina di casa — nel nostro
 caso un container LXC di Proxmox — e il database le sta accanto: è il servizio
 `db` del `docker-compose.yml`, un Postgres con i dati nel volume `pgdata`.
-Non pubblica porte: lo raggiungono solo gli altri container, all'host `db`.
+Gli altri container lo raggiungono all'host `db`; da fuori, solo se lo si
+chiede con `DB_LAN_IP` (vedi [più sotto](#accedere-al-database-con-un-client-sql)).
 
 Il `Dockerfile` è a più stadi e ne produce due immagini: `runner`, il server di
 produzione, e `migrator`, un container usa e getta che applica le migrazioni.
@@ -107,6 +108,7 @@ Vivono nel file `.env` accanto al `docker-compose.yml`, mai nell'immagine:
 | `AUTH_URL` | Vuoto quando si accede dalla LAN, il dominio `https://…` quando l'app è pubblica |
 | `COMPOSE_PROFILES` | Vuoto per la sola app, `public` per accendere anche il tunnel |
 | `TUNNEL_TOKEN` | Il token del tunnel Cloudflare, solo con il profilo `public` |
+| `DB_LAN_IP` | Facoltativo: l'IP di rete locale dell'LXC, per aprire il database ai client SQL della LAN. Vuoto significa solo `127.0.0.1` |
 
 Su `AUTH_URL` la regola non è di gusto: il codice imposta `trustHost: true`,
 così Auth.js ricava l'host dagli header inoltrati. Finché si accede per
@@ -285,6 +287,36 @@ docker compose up -d
 Gli apici singoli non sono un dettaglio: `$DATABASE_URL` va espansa dentro il
 container, dove punta a `db`. Vale la pena provarlo una volta a freddo, prima
 che serva.
+
+### Accedere al database con un client SQL
+
+La porta 5432 di `db` è pubblicata sull'indirizzo scritto in `DB_LAN_IP`, mai
+su tutti. Senza la variabile vale `127.0.0.1`: dal PC ci si arriva solo con un
+tunnel SSH (`ssh -N -L 5432:127.0.0.1:5432 <utente>@<lxc>`, oppure l'opzione
+SSH del client). Con l'IP di rete locale dell'LXC ci si collega direttamente
+dalla LAN:
+
+```
+DB_LAN_IP="192.168.1.50"
+```
+
+poi `docker compose up -d db` e, dal client: host l'IP dell'LXC, porta `5432`,
+database e utente `finanze`, password quella di `POSTGRES_PASSWORD`, SSL
+disattivato.
+
+Tre cose da sapere prima di farlo:
+
+- **Il firewall dell'LXC non conta.** Docker inserisce le sue regole prima di
+  quelle di `ufw`, quindi una porta pubblicata passa comunque. Per restringere
+  a certi dispositivi si usa il firewall di Proxmox sull'LXC.
+- **L'IP deve essere fisso** (prenotazione DHCP sul router o indirizzo statico
+  in Proxmox): se cambia, `db` non riesce a legarsi alla porta, non parte, e
+  l'app si ferma con lui.
+- **Fuori da internet lo tiene il router**: nessun inoltro della 5432. Il tunnel
+  Cloudflare non c'entra, porta solo ad `app:3000`.
+
+L'utente `finanze` è proprietario del database e può cancellare tutto: prima di
+modificare dati a mano, `sudo ./backup-db.sh`.
 
 ### Aggiornare Postgres a una versione maggiore
 
