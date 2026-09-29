@@ -102,7 +102,7 @@ Vivono nel file `.env` accanto al `docker-compose.yml`, mai nell'immagine:
 
 | Variabile | Valore |
 | --- | --- |
-| `DATABASE_URL` | `postgresql://finanze:<POSTGRES_PASSWORD>@db:5432/finanze?schema=public` |
+| `DATABASE_URL` | `postgresql://finanze:<POSTGRES_PASSWORD>@db:5432/finanze`, senza `?schema=public`: la usano anche `pg_dump` e `psql`, che quel parametro di Prisma lo rifiutano |
 | `POSTGRES_PASSWORD` | La password dell'utente `finanze`, generata con `openssl rand -hex 24`. Va fissata prima del primo avvio: il database la registra quando crea il volume |
 | `AUTH_SECRET` | Una chiave generata con `npx auth secret` |
 | `AUTH_URL` | Vuoto quando si accede dalla LAN, il dominio `https://…` quando l'app è pubblica |
