@@ -4,10 +4,11 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { currentUser } from "@/lib/auth";
-import { getGroupForUser } from "@/lib/groups";
+import { getGroupForUser, listExpenseCategories } from "@/lib/groups";
+import { buildCategoryHistory, categoryLabel, planCategorization } from "@/lib/categories";
 import { parseAmountToCents } from "@/lib/money";
 import { computeSplits, SplitError, type SplitParticipant } from "@/lib/split";
-import { splitModeSchema } from "@/lib/validation";
+import { categoryFieldSchema, splitModeSchema } from "@/lib/validation";
 import { logEvent } from "@/lib/log";
 import { clientIp } from "@/lib/request-ip";
 import type { ActionState } from "@/lib/action-state";
@@ -66,6 +67,11 @@ export async function createExpenseAction(
   if (!parsedMode.success) return { error: "Modalità di divisione non valida." };
   const splitMode = parsedMode.data;
 
+  // Il suggerimento l'ha già dato il form: qui si salva quello che è arrivato.
+  // Riproporlo sul server scavalcherebbe chi ha scelto «Senza categoria».
+  const parsedCategory = categoryFieldSchema.safeParse(formData.get("category") ?? "");
+  if (!parsedCategory.success) return { error: "Categoria non valida." };
+
   const selectedIds = formData.getAll("participants").map(String);
   const participants = group.members.filter((member) => selectedIds.includes(member.id));
   if (participants.length === 0) {
@@ -108,6 +114,7 @@ export async function createExpenseAction(
       splitMode,
       payerId,
       note: String(formData.get("note") ?? "").trim() || null,
+      category: parsedCategory.data,
       splits: { createMany: { data: splits } },
     },
   });
@@ -164,6 +171,91 @@ export async function updateExpensePayerAction(
   revalidatePath(`/gruppi/${groupId}/spese`);
   revalidatePath(`/gruppi/${groupId}/saldi`);
   return { success: `Ora la spesa risulta pagata da ${payer.name}.` };
+}
+
+/**
+ * Cambia la categoria di una spesa già registrata.
+ *
+ * A differenza del pagatore la può cambiare ogni membro: la categoria non
+ * sposta un centesimo dei saldi, e una spesa la può già eliminare chiunque.
+ */
+export async function updateExpenseCategoryAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const groupId = String(formData.get("groupId") ?? "");
+  const expenseId = String(formData.get("expenseId") ?? "");
+
+  const group = await requireMembership(groupId, "cambia_categoria");
+  if (!group) return { error: "Gruppo non trovato." };
+
+  const parsedCategory = categoryFieldSchema.safeParse(formData.get("category") ?? "");
+  if (!parsedCategory.success) return { error: "Categoria non valida." };
+  const category = parsedCategory.data;
+
+  // Il vincolo sul gruppo impedisce di toccare la spesa di un altro gruppo
+  // passando un id arbitrario nel form.
+  const updated = await prisma.expense.updateMany({
+    where: { id: expenseId, groupId },
+    data: { category },
+  });
+  if (updated.count === 0) {
+    logEvent("warn", "riga_non_trovata", {
+      gruppo: groupId,
+      tipo: "spesa",
+      riga: expenseId,
+      azione: "cambia_categoria",
+    });
+    return { error: "Spesa non trovata." };
+  }
+
+  revalidatePath(`/gruppi/${groupId}`);
+  revalidatePath(`/gruppi/${groupId}/spese`);
+  return { success: `Categoria: ${categoryLabel(category)}.` };
+}
+
+/**
+ * Dà una categoria alle spese che non ne hanno, dove il riconoscimento
+ * automatico la trova: è il modo di sistemare in un colpo le spese registrate
+ * prima che le categorie esistessero.
+ *
+ * Il filtro `category: null` sta anche nella scrittura, non solo nel calcolo:
+ * se nel frattempo qualcuno ne ha scelta una a mano, la sua scelta resta.
+ */
+export async function categorizeExpensesAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const groupId = String(formData.get("groupId") ?? "");
+
+  const group = await requireMembership(groupId, "categorizza_spese");
+  if (!group) return { error: "Gruppo non trovato." };
+
+  const expenses = await listExpenseCategories(groupId);
+  const plan = planCategorization(expenses, buildCategoryHistory(expenses));
+
+  // Con un piano vuoto (un altro membro ci ha già pensato) la transazione non
+  // fa niente, ma le pagine si aggiornano lo stesso e il pulsante sparisce.
+  const results = await prisma.$transaction(
+    plan.map(({ category, expenseIds }) =>
+      prisma.expense.updateMany({
+        where: { id: { in: expenseIds }, groupId, category: null },
+        data: { category },
+      }),
+    ),
+  );
+  const count = results.reduce((sum, result) => sum + result.count, 0);
+
+  revalidatePath(`/gruppi/${groupId}`);
+  revalidatePath(`/gruppi/${groupId}/spese`);
+  return {
+    success:
+      count === 0
+        ? "Nessuna spesa da categorizzare."
+        : count === 1
+          ? "1 spesa categorizzata."
+          : `${count} spese categorizzate.`,
+  };
 }
 
 export async function deleteExpenseAction(

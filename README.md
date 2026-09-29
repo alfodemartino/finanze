@@ -17,9 +17,18 @@ necessari a pareggiare i conti.
 - **Spese** — descrizione, importo, data, chi ha pagato e come si divide: in
   parti uguali, per quote o con importi esatti. Un'anteprima mostra le quote
   mentre si compila il form.
+- **Categorie** — ogni spesa ha una categoria (spesa alimentare, bollette,
+  trasporti, …) con la sua icona, un glifo bianco su un cerchio colorato. Il
+  form la propone mentre si scrive la descrizione: prima guarda come il gruppo
+  ha già categorizzato la stessa descrizione, poi un dizionario di parole
+  chiave e marchi. Se non la riconosce la si sceglie a mano, e dallo storico la
+  si cambia quando si vuole: ogni correzione diventa il suggerimento della
+  volta dopo. Le spese nate senza categoria si sistemano in un colpo con il
+  pulsante «Categorizza».
 - **Ricerca nello storico** — una casella sopra le spese le filtra mentre si
-  scrive: descrizione, nota, chi ha pagato, importo e data, senza badare a
-  maiuscole e accenti. Più parole vanno trovate tutte, in qualsiasi ordine.
+  scrive: descrizione, categoria, nota, chi ha pagato, importo e data, senza
+  badare a maiuscole e accenti. Più parole vanno trovate tutte, in qualsiasi
+  ordine.
 - **Saldi** — per ogni persona: quanto ha anticipato, quanto è a suo carico e
   quanto le resta da dare o ricevere.
 - **Riepilogo su tutti i gruppi** — in cima a «I miei gruppi»: quanto si deve
@@ -34,8 +43,8 @@ necessari a pareggiare i conti.
   riscritto il nome del gruppo. Sparisce tutto quello che gli appartiene: spese,
   quote, rimborsi e membri. Gli account restano.
 - **Export in Excel** — l'amministratore del gruppo scarica un file `.xlsx` con
-  tutte le operazioni, spese e rimborsi in ordine di data: per ognuna chi ha
-  pagato e a chi. Il foglio porta il nome del gruppo.
+  tutte le operazioni, spese e rimborsi in ordine di data: per ognuna la
+  categoria, chi ha pagato e a chi. Il foglio porta il nome del gruppo.
 - **Aspetto in stile iOS** — riquadri arrotondati su fondo grigio, barra di
   navigazione traslucida, controllo segmentato e i colori di sistema di Apple:
   blu per ciò che si tocca, verde e rosso per crediti e debiti.
@@ -368,6 +377,7 @@ prisma/schema.prisma      Modello dati (gruppi, membri, spese, quote, rimborsi)
 prisma/seed.ts            Dati di esempio
 src/lib/money.ts          Importi in centesimi, ripartizione senza resti persi
 src/lib/split.ts          Calcolo delle quote di una spesa
+src/lib/categories.ts     Categorie delle spese e riconoscimento dalla descrizione
 src/lib/balances.ts       Saldi e semplificazione dei debiti
 src/lib/groups.ts         Query sul database, con controllo di appartenenza
 src/lib/group-cascade.ts  Ordine in cui svuotare le tabelle di un gruppo eliminato
@@ -428,5 +438,5 @@ qualche minuto dopo.
 
 ## Cosa non c'è (ancora)
 
-Categorie di spesa, spese ricorrenti, budget mensili, report e grafici, import
-da CSV o da ricevute. Il modello dati è già predisposto per aggiungerli.
+Spese ricorrenti, budget mensili, report e grafici (anche per categoria),
+import da CSV o da ricevute. Il modello dati è già predisposto per aggiungerli.

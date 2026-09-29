@@ -205,6 +205,19 @@ export async function listExpenses(groupId: string, take?: number) {
   });
 }
 
+/**
+ * Descrizione e categoria di ogni spesa del gruppo, dalla più recente: quanto
+ * basta al riconoscimento automatico per imparare dallo storico e per sapere
+ * quali spese sono ancora senza categoria.
+ */
+export async function listExpenseCategories(groupId: string) {
+  return prisma.expense.findMany({
+    where: { groupId },
+    select: { id: true, description: true, category: true },
+    orderBy: [{ date: "desc" }, { createdAt: "desc" }],
+  });
+}
+
 /** Rimborsi registrati nel gruppo, dal più recente. */
 export async function listSettlements(groupId: string, take = 50) {
   return prisma.settlement.findMany({
@@ -231,6 +244,7 @@ export async function getGroupOperations(groupId: string) {
         description: true,
         amountCents: true,
         note: true,
+        category: true,
         payer: { select: { name: true } },
         // Serve solo chi partecipa alla spesa, non quanto gli tocca.
         splits: {

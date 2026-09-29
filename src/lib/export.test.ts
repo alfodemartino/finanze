@@ -13,11 +13,13 @@ const spesa = (
   amountCents: number,
   note: string | null = null,
   fra = ["Anna", "Bruno"],
+  category: ExportExpense["category"] = null,
 ): ExportExpense => ({
   date: new Date(date),
   description,
   amountCents,
   note,
+  category,
   payer: { name: "Anna" },
   splits: fra.map((name) => ({ member: { name } })),
 });
@@ -88,6 +90,18 @@ describe("buildExportRows", () => {
 
     expect(rows[0].note).toBe("con i vicini");
     expect(rows[1].note).toBe("");
+  });
+
+  it("riporta la categoria della spesa, e la lascia vuota dove non c'è", () => {
+    const rows = buildExportRows({
+      expenses: [
+        spesa("2026-05-01", "Bolletta luce", 8200, null, ["Anna"], "UTILITIES"),
+        spesa("2026-05-02", "Varie", 1500),
+      ],
+      settlements: [rimborso("2026-05-03", 3000)],
+    });
+
+    expect(rows.map((row) => row.category)).toEqual(["Bollette", "", ""]);
   });
 
   it("riporta gli importi in centesimi, come sono salvati", () => {

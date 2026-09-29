@@ -38,13 +38,24 @@ const rowWidths = ["w-40", "w-28", "w-44", "w-32"];
 
 /**
  * Le righe di un elenco dentro una card `flush`, chevron compreso: è la forma
- * dell'elenco dei gruppi e di quello delle spese.
+ * dell'elenco dei gruppi e di quello delle spese. `icon` aggiunge a sinistra il
+ * cerchio dell'icona, che hanno le righe delle spese: grigio, perché la
+ * categoria è uno dei dati in arrivo.
  */
-export function SkeletonRows({ count = 3 }: { count?: number }) {
+export function SkeletonRows({ count = 3, icon = false }: { count?: number; icon?: boolean }) {
   return (
     <ul className="divide-y divide-separator">
       {Array.from({ length: count }, (_, index) => (
         <li key={index} className="flex items-center justify-between gap-3 px-4 py-3">
+          {/* Non `Skeleton`: il suo `rounded-md` e un `rounded-full` passato da
+              fuori sono due utility in conflitto, e vincerebbe l'ordine del
+              foglio di stile. Il cerchio si dichiara per intero. */}
+          {icon && (
+            <span
+              aria-hidden
+              className="size-9 shrink-0 animate-pulse rounded-full bg-fill motion-reduce:animate-none"
+            />
+          )}
           <span className="min-w-0 flex-1">
             <Skeleton className={`h-4 max-w-full ${rowWidths[index % rowWidths.length]}`} />
             <Skeleton className="mt-2 h-3 w-52 max-w-full" />
@@ -156,7 +167,7 @@ export function SkeletonOverview() {
       </Card>
 
       <Card title="Ultime spese" flush actions={<SkeletonAction />}>
-        <SkeletonRows count={3} />
+        <SkeletonRows count={3} icon />
       </Card>
     </div>
   );

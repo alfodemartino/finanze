@@ -63,6 +63,7 @@ describe("expenseSearchText", () => {
     amountCents: 1234560,
     date: new Date("2026-09-24T12:00:00Z"),
     note: "Anche i detersivi",
+    category: "GROCERIES" as const,
     payer: { name: "Lucia" },
   };
 
@@ -86,6 +87,12 @@ describe("expenseSearchText", () => {
     expect(finds("24 set 2026")).toBe(true);
     expect(finds("settembre")).toBe(true);
     expect(finds("ottobre")).toBe(false);
+  });
+
+  it("trova la categoria, ma non l'assenza di categoria", () => {
+    expect(finds("alimentare")).toBe(true);
+    const senza = { ...expense, category: null };
+    expect(matchesSearch(expenseSearchText(senza, "EUR"), searchTerms("senza"))).toBe(false);
   });
 
   it("non cerca fra i partecipanti", () => {

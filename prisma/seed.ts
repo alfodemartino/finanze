@@ -55,6 +55,7 @@ async function main() {
   const expenses = [
     {
       description: "Spesa supermercato",
+      category: "GROCERIES" as const,
       amountCents: 8450,
       payerId: anna.id,
       splitMode: "EQUAL" as const,
@@ -62,13 +63,18 @@ async function main() {
     },
     {
       description: "Bolletta luce",
+      category: "UTILITIES" as const,
       amountCents: 12000,
       payerId: bruno.id,
       splitMode: "SHARES" as const,
       participants: [anna, bruno],
     },
     {
+      // Senza categoria, come le spese registrate prima che le categorie
+      // esistessero: così nello storico si vedono anche «Senza categoria» e il
+      // pulsante che la riconosce dalla descrizione.
       description: "Cena fuori",
+      category: null,
       amountCents: 6000,
       payerId: carla.id,
       splitMode: "EQUAL" as const,
@@ -90,6 +96,7 @@ async function main() {
       data: {
         groupId: group.id,
         description: expense.description,
+        category: expense.category,
         amountCents: expense.amountCents,
         splitMode: expense.splitMode,
         payerId: expense.payerId,
