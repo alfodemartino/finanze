@@ -263,9 +263,14 @@ predefinita è 30 giorni.
 **Una copia fuori dalla macchina.** I dump stanno sullo stesso disco del
 volume `pgdata`: coprono una migrazione sbagliata o un `docker compose down
 -v`, non un disco rotto o un LXC perso. La cartella `/var/backups/finanze` va
-quindi portata anche altrove — un job di backup di Proxmox che includa l'LXC,
-un `rsync` verso un NAS, un bucket. Quale dei tre conta meno del fatto che ci
-sia.
+quindi portata anche altrove.
+
+Da noi lo fa il **backup quotidiano di Proxmox dell'intero LXC**, su uno
+storage diverso dal disco dell'LXC: porta con sé il volume, il `.env` e i dump.
+Il job va messo **dopo le 3:15** — il timer parte alle 3 con fino a 15 minuti
+di ritardo casuale — altrimenti ogni copia contiene il dump del giorno prima.
+Un `rsync` verso un NAS o un bucket andrebbero bene lo stesso: quale strada
+conta meno del fatto che ci sia.
 
 ### Ripristinare un dump
 
@@ -320,17 +325,27 @@ modificare dati a mano, `sudo ./backup-db.sh`.
 ### Aggiornare Postgres a una versione maggiore
 
 Le versioni minori (18.1 → 18.2) sono un `docker compose pull db` seguito da
-`docker compose up -d`. Le **maggiori** (18 → 19) no: il server nuovo si
-rifiuta di partire sui file di quello vecchio. Si passa da un dump:
+`docker compose up -d`. Le **maggiori** (18 → 19) no, e l'errore non si vede:
+dalla 18 l'immagine ufficiale tiene i dati in una sottocartella del volume con
+il numero di versione (`18/docker`). Cambiando solo `PG_IMAGE`, il server
+nuovo non trova niente nella sua cartella, crea un database vuoto e parte
+senza lamentarsi — e `./deploy.sh` ci applica sopra le migrazioni. L'app
+risulta vuota. I dati non sono persi, sono ancora nella cartella della
+versione vecchia, ma nel frattempo chi usa l'app vede i conti spariti.
+
+Si passa quindi da un dump:
 
 1. `sudo ./backup-db.sh`, con l'immagine ancora vecchia.
-2. `docker compose down` e `docker volume rm finanze_pgdata`.
-3. `PG_IMAGE="postgres:19"` nel `.env`, poi `docker compose up -d db`.
-4. Ripristinare il dump come sopra, senza i due comandi `dropdb`/`createdb`:
-   il database è appena nato vuoto.
+2. `docker compose stop app`.
+3. `PG_IMAGE="postgres:19"` nel `.env`, poi `docker compose up -d db`: nasce
+   vuoto, nella sua cartella.
+4. Ripristinare il dump come sopra, senza i due comandi `dropdb`/`createdb`.
+5. `docker compose up -d`, e un controllo dall'app.
 
-Il passo 2 cancella i dati: prima di farlo conviene avere il dump del passo 1
-anche fuori dalla macchina.
+La cartella della versione vecchia resta nel volume e fa da via di ritorno:
+rimettere il tag precedente basta a riaverla. Quando la nuova è collaudata si
+cancella con
+`docker compose exec db rm -rf /var/lib/postgresql/18`.
 
 ## Comandi utili
 
@@ -367,7 +382,7 @@ src/app/gruppi/           Pagine dell'applicazione
 src/app/api/health/       Sonda per l'healthcheck del container
 src/components/           Componenti di interfaccia e form
 Dockerfile                Immagini di produzione e delle migrazioni
-docker-compose.yml        Servizi sulla macchina di casa (app, migrate, tunnel)
+docker-compose.yml        Servizi sulla macchina di casa (db, app, migrate, backup, tunnel)
 deploy.sh                 Rilascio di una nuova versione
 backup-db.sh              Copia del database, lanciata dal timer systemd
 deploy/                   Unit systemd per la copia giornaliera

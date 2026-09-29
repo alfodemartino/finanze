@@ -114,7 +114,10 @@ codice nostro dove aspettare.
 
 Postgres gira sulla stessa macchina dell'app, come servizio `db` del
 `docker-compose.yml`, con i dati in un volume Docker: non c'è un fornitore che
-ne tenga una storia, quindi i dump di `backup-db.sh` sono l'unica rete.
+ne tenga una storia. La rete sono i dump notturni di `backup-db.sh`, che il
+backup di Proxmox dell'LXC porta fuori dalla macchina. Mai cambiare la versione
+maggiore di `PG_IMAGE` senza la procedura del README: il server nuovo
+partirebbe su un database vuoto.
 
 Le migrazioni **non** girano durante il build, né all'avvio del server: vanno
 applicate a parte. Nei container il passo è `docker compose run --rm migrate`,
