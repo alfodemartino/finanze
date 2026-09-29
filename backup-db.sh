@@ -2,10 +2,11 @@
 #
 # Copia giornaliera del database su questa macchina.
 #
-# Neon fa i suoi backup, ma vivono dentro Neon: non coprono la perdita
-# dell'accesso all'account, e recuperare «com'erano i conti tre settimane fa»
-# dipende da quanta storia tiene il piano. Questa è la copia che resta in mano
-# nostra.
+# Il database vive in un volume Docker su questa stessa macchina e nessun altro
+# ne tiene una storia: questi dump sono l'unico modo di recuperare «com'erano i
+# conti tre settimane fa», dopo una migrazione sbagliata o un volume cancellato.
+# Non coprono la perdita del disco: la cartella va copiata anche fuori dall'LXC
+# (vedi README).
 #
 #   sudo ./backup-db.sh
 #

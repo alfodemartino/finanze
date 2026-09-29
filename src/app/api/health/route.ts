@@ -4,9 +4,9 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * Di proposito non interroga il database: nel piano gratuito di Neon il
- * compute si sospende dopo un po' di inattività, e un healthcheck che
- * fallisce durante il risveglio farebbe riavviare un container sano.
+ * Di proposito non interroga il database: se Postgres è momentaneamente
+ * irraggiungibile (un riavvio, un restore) il problema non è il processo
+ * Node, e un healthcheck che fallisce farebbe riavviare un container sano.
  */
 export function GET() {
   return Response.json({ ok: true }, { headers: { "Cache-Control": "no-store" } });

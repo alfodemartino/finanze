@@ -113,9 +113,11 @@ codice nostro dove aspettare.
 
 ## Database
 
+Postgres gira sulla stessa macchina dell'app, come servizio `db` del
+`docker-compose.yml`, con i dati in un volume Docker: non c'è un fornitore che
+ne tenga una storia, quindi i dump di `backup-db.sh` sono l'unica rete.
+
 Le migrazioni **non** girano durante il build, né all'avvio del server: vanno
-applicate a parte, con la stringa di connessione **diretta** di Neon (quella
-senza `-pooler`). La `DATABASE_URL` che usa l'applicazione è invece la stringa
-**pooled**. Nei container il passo è `docker compose run --rm migrate`, che
-esegue `prisma migrate deploy`: mai `npm run db:migrate`, che è
+applicate a parte. Nei container il passo è `docker compose run --rm migrate`,
+che esegue `prisma migrate deploy`: mai `npm run db:migrate`, che è
 `prisma migrate dev` e in certi casi ricrea il database.
