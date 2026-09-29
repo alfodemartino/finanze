@@ -82,6 +82,43 @@ export function ButtonLink({
   return <NavLink className={buttonClass(variant, className, size)} {...props} />;
 }
 
+export type SegmentedItem = { href: string; label: string; active: boolean };
+
+/**
+ * Il controllo segmentato di iOS: una pista grigia con dentro una pastiglia
+ * chiara che indica la scelta. Le voci sono link, così la scelta sta
+ * nell'indirizzo. `scroll` passa ai link: `false` quando cambiare voce non deve
+ * riportare la pagina in cima.
+ */
+export function SegmentedLinks({
+  items,
+  className = "",
+  scroll,
+}: {
+  items: SegmentedItem[];
+  className?: string;
+  scroll?: boolean;
+}) {
+  return (
+    <ul className={`flex gap-0.5 rounded-control bg-fill p-0.5 ${className}`}>
+      {items.map((item) => (
+        <li key={item.href} className="flex-1">
+          <NavLink
+            href={item.href}
+            scroll={scroll}
+            aria-current={item.active ? "page" : undefined}
+            className={`block rounded-[7px] px-4 py-1.5 text-center text-[13px] font-semibold whitespace-nowrap transition ${
+              item.active ? "bg-raised text-label shadow-sm" : "text-label-secondary hover:text-label"
+            }`}
+          >
+            {item.label}
+          </NavLink>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export function Field({
   label,
   hint,

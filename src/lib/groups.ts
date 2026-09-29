@@ -84,6 +84,20 @@ export async function getGroupForUser(groupId: string, userId: string) {
   return { ...group, viewer };
 }
 
+/**
+ * Quanto ha speso il gruppo per categoria fra `start` (compreso) ed `end`
+ * (escluso). Solo spese, come `getGroupExpenseTotal`: un rimborso sposta
+ * denaro fra i membri, non è una spesa di nessuna categoria.
+ */
+export async function getCategoryTotals(groupId: string, start: Date, end: Date) {
+  const rows = await prisma.expense.groupBy({
+    by: ["category"],
+    where: { groupId, date: { gte: start, lt: end } },
+    _sum: { amountCents: true },
+  });
+  return rows.map((row) => ({ category: row.category, amountCents: row._sum.amountCents ?? 0 }));
+}
+
 /** Saldi del gruppo e pagamenti minimi per pareggiare i conti. */
 export async function getGroupBalances(groupId: string) {
   const [members, expenses, settlements] = await Promise.all([

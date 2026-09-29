@@ -25,6 +25,11 @@ necessari a pareggiare i conti.
   si cambia quando si vuole: ogni correzione diventa il suggerimento della
   volta dopo. Le spese nate senza categoria si sistemano in un colpo con il
   pulsante «Categorizza».
+- **Spese per categoria** — nel Riepilogo del gruppo, quanto si è speso in
+  ogni categoria in un mese o in un anno, con la percentuale sul totale e una
+  barra per confrontarle a colpo d'occhio. Il periodo si sfoglia con le frecce
+  e resta nell'indirizzo (`?periodo=2026-09`, `?periodo=2026`). I rimborsi non
+  contano: non sono spese.
 - **Ricerca nello storico** — una casella sopra le spese le filtra mentre si
   scrive: descrizione, categoria, nota, chi ha pagato, importo e data, senza
   badare a maiuscole e accenti. Più parole vanno trovate tutte, in qualsiasi
@@ -378,6 +383,8 @@ prisma/seed.ts            Dati di esempio
 src/lib/money.ts          Importi in centesimi, ripartizione senza resti persi
 src/lib/split.ts          Calcolo delle quote di una spesa
 src/lib/categories.ts     Categorie delle spese e riconoscimento dalla descrizione
+src/lib/category-totals.ts  Totali per categoria: ordine, percentuali, barre
+src/lib/periods.ts        Mesi e anni su cui si sommano le spese
 src/lib/balances.ts       Saldi e semplificazione dei debiti
 src/lib/groups.ts         Query sul database, con controllo di appartenenza
 src/lib/group-cascade.ts  Ordine in cui svuotare le tabelle di un gruppo eliminato
@@ -438,5 +445,5 @@ qualche minuto dopo.
 
 ## Cosa non c'è (ancora)
 
-Spese ricorrenti, budget mensili, report e grafici (anche per categoria),
-import da CSV o da ricevute. Il modello dati è già predisposto per aggiungerli.
+Spese ricorrenti, budget mensili, grafici nel tempo, import da CSV o da
+ricevute. Il modello dati è già predisposto per aggiungerli.
