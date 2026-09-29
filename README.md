@@ -82,11 +82,12 @@ Basta valorizzare `AUTH_GOOGLE_ID` e `AUTH_GOOGLE_SECRET`: il pulsante compare
 da solo nella pagina di accesso. L'URL di callback da registrare su Google è
 `<AUTH_URL>/api/auth/callback/google`.
 
-## Deploy in casa (Docker + Neon)
+## Deploy in casa (Docker)
 
 L'applicazione gira in un container Docker su una macchina di casa — nel nostro
-caso un container LXC di Proxmox — mentre il database resta su Neon, nella
-regione **AWS `eu-central-1` (Francoforte)**.
+caso un container LXC di Proxmox — e il database le sta accanto: è il servizio
+`db` del `docker-compose.yml`, un Postgres con i dati nel volume `pgdata`.
+Non pubblica porte: lo raggiungono solo gli altri container, all'host `db`.
 
 Il `Dockerfile` è a più stadi e ne produce due immagini: `runner`, il server di
 produzione, e `migrator`, un container usa e getta che applica le migrazioni.
@@ -100,8 +101,8 @@ Vivono nel file `.env` accanto al `docker-compose.yml`, mai nell'immagine:
 
 | Variabile | Valore |
 | --- | --- |
-| `DATABASE_URL` | La stringa **pooled** di Neon (host con `-pooler`), con `?sslmode=require&pgbouncer=true&connect_timeout=15` |
-| `DIRECT_DATABASE_URL` | La stringa **diretta** di Neon (host senza `-pooler`). La usa solo il servizio `migrate`; vuota se il database non ha un pooler |
+| `DATABASE_URL` | `postgresql://finanze:<POSTGRES_PASSWORD>@db:5432/finanze?schema=public` |
+| `POSTGRES_PASSWORD` | La password dell'utente `finanze`, generata con `openssl rand -hex 24`. Va fissata prima del primo avvio: il database la registra quando crea il volume |
 | `AUTH_SECRET` | Una chiave generata con `npx auth secret` |
 | `AUTH_URL` | Vuoto quando si accede dalla LAN, il dominio `https://…` quando l'app è pubblica |
 | `COMPOSE_PROFILES` | Vuoto per la sola app, `public` per accendere anche il tunnel |
@@ -119,7 +120,7 @@ di login fallirebbe con `UntrustedHost`.
 ```bash
 git clone https://github.com/alfodemartino/finanze /opt/finanze
 cd /opt/finanze
-cp .env.example .env        # poi compila DATABASE_URL e AUTH_SECRET
+cp .env.example .env        # poi compila DATABASE_URL, POSTGRES_PASSWORD e AUTH_SECRET
 chmod 600 .env
 
 docker compose build
@@ -169,15 +170,7 @@ casa aspetta questo script. Quando Vercel sarà spento resterà solo
 
 Le migrazioni non girano durante il build né all'avvio del server: sono un passo
 separato (`docker compose run --rm migrate`, che esegue `prisma migrate deploy`).
-
-Quel servizio si collega con `DIRECT_DATABASE_URL`, non con la stringa pooled
-dell'app, e la ragione è una trappola che si manifesta tardi: il pooler di Neon
-è PgBouncer in modalità transazione, dove `prisma migrate deploy` non riesce ad
-applicare una migrazione, mentre **leggere** quelle già applicate funziona lo
-stesso. Con la sola stringa pooled il comando sembra quindi funzionare finché
-lo schema non cambia, e fallisce al primo cambio — cioè quando serve. Fuori dai
-container vale la stessa regola: `npx prisma migrate deploy` sulla stringa
-diretta.
+Il servizio aspetta che `db` sia pronto, e se è spento lo avvia.
 
 ### Log dell'applicazione
 
@@ -232,13 +225,12 @@ Le password non compaiono mai, in nessun evento.
 
 ### Copia giornaliera del database
 
-Neon fa i suoi backup, ma vivono dentro Neon: non coprono la perdita
-dell'accesso all'account, e quanta storia si possa riavvolgere dipende dal
-piano. `backup-db.sh` tiene una copia sulla macchina di casa.
+Il database non ha un fornitore che ne tenga una storia: i dump di
+`backup-db.sh` sono l'unico modo di tornare a com'erano i conti ieri o tre
+settimane fa. Per questo il timer qui sotto **non è facoltativo**.
 
-Lo script lancia `pg_dump` in un container `postgres`, sulla connessione
-**diretta** — un dump apre una sessione lunga, che il pooler in modalità
-transazione non regge. Dump, verifica e rinomina avvengono in un comando solo:
+Lo script lancia `pg_dump` in un container `postgres`. Dump, verifica e
+rinomina avvengono in un comando solo:
 il file nasce `.partial` e perde l'estensione solo dopo che `pg_restore --list`
 ha riletto l'archivio, così una corsa interrotta non lascia in giro qualcosa che
 sembra un backup valido.
@@ -264,33 +256,50 @@ journalctl -u finanze-backup -n 50
 ls -lh /var/backups/finanze          # `.ultimo-successo` porta la data buona
 ```
 
-Per ripristinare, su un database vuoto:
-
-```bash
-pg_restore --clean --if-exists --no-owner --no-privileges \
-           -d "<stringa diretta>" /var/backups/finanze/finanze-<data>.dump
-```
-
 `BACKUP_DIR`, `KEEP_DAYS` e `PG_IMAGE` si regolano dal `.env`; la retention
 predefinita è 30 giorni.
 
-Su `PG_IMAGE` c'è una regola da ricordare quando Neon aggiornerà il server:
-`pg_dump` legge senza problemi un server **più vecchio** di sé, ma si rifiuta di
-leggerne uno **più recente**. Il default (`postgres:18`) segue la versione che
-Neon serve oggi; quando non basterà più, l'errore nominerà entrambe le versioni
-e basterà alzare il tag.
+**Una copia fuori dalla macchina.** I dump stanno sullo stesso disco del
+volume `pgdata`: coprono una migrazione sbagliata o un `docker compose down
+-v`, non un disco rotto o un LXC perso. La cartella `/var/backups/finanze` va
+quindi portata anche altrove — un job di backup di Proxmox che includa l'LXC,
+un `rsync` verso un NAS, un bucket. Quale dei tre conta meno del fatto che ci
+sia.
 
-### Spostare il database su un altro progetto Neon
+### Ripristinare un dump
 
-1. `npx prisma migrate deploy` sulla stringa **diretta** del progetto nuovo,
-   per creare tabelle e indici.
-2. Copiare i dati dal vecchio al nuovo (`pg_dump --data-only` → `psql`).
-3. Aggiornare `DATABASE_URL` nel `.env` con la stringa **pooled** del progetto
-   nuovo e rilanciare `docker compose up -d`: le variabili si leggono all'avvio
-   del container, quindi finché non lo si ricrea l'app continua a parlare col
-   vecchio database.
-4. Solo dopo aver verificato che l'app funziona, cancellare il vecchio
-   progetto Neon.
+Si ferma l'app, si ricrea vuoto il database e si ricarica il dump.
+`--single-transaction` fa sì che un errore a metà lasci il database vuoto,
+invece che mezzo pieno:
+
+```bash
+docker compose stop app
+docker compose exec db dropdb -U finanze finanze
+docker compose exec db createdb -U finanze finanze
+docker compose run --rm --no-TTY backup sh -c \
+  'pg_restore --no-owner --no-privileges --exit-on-error --single-transaction \
+              -d "$DATABASE_URL" /backups/finanze-<data>.dump'
+docker compose up -d
+```
+
+Gli apici singoli non sono un dettaglio: `$DATABASE_URL` va espansa dentro il
+container, dove punta a `db`. Vale la pena provarlo una volta a freddo, prima
+che serva.
+
+### Aggiornare Postgres a una versione maggiore
+
+Le versioni minori (18.1 → 18.2) sono un `docker compose pull db` seguito da
+`docker compose up -d`. Le **maggiori** (18 → 19) no: il server nuovo si
+rifiuta di partire sui file di quello vecchio. Si passa da un dump:
+
+1. `sudo ./backup-db.sh`, con l'immagine ancora vecchia.
+2. `docker compose down` e `docker volume rm finanze_pgdata`.
+3. `PG_IMAGE="postgres:19"` nel `.env`, poi `docker compose up -d db`.
+4. Ripristinare il dump come sopra, senza i due comandi `dropdb`/`createdb`:
+   il database è appena nato vuoto.
+
+Il passo 2 cancella i dati: prima di farlo conviene avere il dump del passo 1
+anche fuori dalla macchina.
 
 ## Comandi utili
 

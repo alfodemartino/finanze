@@ -10,6 +10,5 @@ Type=oneshot
 WorkingDirectory=/opt/finanze
 ExecStart=/opt/finanze/backup-db.sh
 
-# Neon può metterci qualche secondo a svegliarsi, e un dump su una connessione
-# lenta non deve restare appeso per sempre.
+# Un dump bloccato non deve restare appeso per sempre.
 TimeoutStartSec=30min
