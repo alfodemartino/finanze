@@ -5,9 +5,11 @@ build/
 dist/
 coverage/
 
-.env
-.env.local
-.env*.local
+# Ogni file di variabili, non solo `.env`: le copie di riserva (`.env.neon`,
+# `.env.bak`, …) contengono le stesse credenziali. Resta tracciato solo
+# l'esempio.
+.env*
+!.env.example
 
 *.log
 npm-debug.log*

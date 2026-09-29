@@ -2,7 +2,8 @@
 Description=Avvia ogni giorno la copia del database di Finanze
 
 [Timer]
-# Le 3 del mattino: l'app è ferma e la linea è libera.
+# Le 3 del mattino: nessuno sta usando l'app. Il backup di Proxmox dell'LXC va
+# messo dopo le 3:15 (vedi RandomizedDelaySec), così include il dump della notte.
 OnCalendar=*-*-* 03:00:00
 
 # La macchina di casa non è sempre accesa. Senza questo, una corsa saltata

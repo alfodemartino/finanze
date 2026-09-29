@@ -25,9 +25,10 @@ services:
   #
   # `PG_IMAGE` è la stessa che usa `backup`, di proposito: `pg_dump` non legge
   # un server più recente di sé, quindi tenerle allineate evita l'errore. Alzare
-  # la versione *maggiore* su un volume già popolato non è però un cambio di
-  # tag: il server si rifiuta di partire sui dati di una versione precedente e
-  # serve un dump e un restore (vedi README).
+  # la versione *maggiore* non è però un cambio di tag: ogni versione tiene i
+  # dati in una sua sottocartella del volume (`18/docker`, …), quindi il server
+  # nuovo partirebbe su un database vuoto, e `deploy.sh` ci applicherebbe sopra
+  # le migrazioni. Si passa da un dump e un restore (vedi README).
   db:
     image: ${PG_IMAGE:-postgres:18}
     environment:
