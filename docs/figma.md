@@ -112,6 +112,15 @@ Qualche dettaglio che non si indovina guardando il file:
 
 ## Differenze note dall'app
 
+- **Schermate del gruppo prima del riordino del 30 settembre 2026.** Le cornici 03
+  e 04 mostrano ancora la testata con «Categorie» ed «Esporta in Excel», le
+  schede solo in alto e il form della nuova spesa accanto allo storico.
+  Nell'app ora ci sono il saldo personale in cima al Riepilogo, la barra delle
+  schede in basso sul telefono con il «+», il menu «…» del gruppo, il menu
+  dell'account (tema e uscita) e la pagina `/gruppi/[id]/spese/nuova`; le
+  barre delle categorie hanno il colore della categoria. Vanno ridisegnate,
+  con una cornice nuova per «Nuova spesa».
+
 - **Carattere.** L'app usa San Francisco sui dispositivi Apple e il carattere
   di sistema altrove. Figma elenca SF Pro, ma nel file i testi in SF Pro
   restavano invisibili, quindi il file usa **Inter**, che gli somiglia:

@@ -3,7 +3,7 @@ import { currentUser } from "@/lib/auth";
 import { getCategoryTotals, getGroupBalances, getGroupForUser, listExpenses } from "@/lib/groups";
 import { categoryBreakdown } from "@/lib/category-totals";
 import { parsePeriod } from "@/lib/periods";
-import { BalanceTable, DebtList } from "@/components/Balances";
+import { BalanceTable, DebtList, ViewerBalance } from "@/components/Balances";
 import { CategoryTotals } from "@/components/CategoryTotals";
 import { ExpenseList } from "@/components/ExpenseList";
 import { ButtonLink, Card } from "@/components/ui";
@@ -31,45 +31,54 @@ export default async function GroupOverviewPage({
     getCategoryTotals(group.id, period.start, period.end),
   ]);
 
+  const viewerBalance = balances.find((balance) => balance.memberId === group.viewer.id);
+
   return (
-    <div className="space-y-6">
-      <Card
-        title="Chi deve dare quanto a chi"
-        description="Il numero minimo di pagamenti per pareggiare i conti di tutti."
-        actions={
-          <div className="flex flex-wrap gap-2">
-            <ButtonLink href={`/gruppi/${group.id}/spese`} size="sm">
-              Aggiungi una spesa
-            </ButtonLink>
-            <ButtonLink href={`/gruppi/${group.id}/saldi`} variant="secondary" size="sm">
-              Registra un rimborso
-            </ButtonLink>
-          </div>
-        }
-      >
-        <DebtList debts={debts} currency={group.currency} />
-      </Card>
+    // Su desktop due colonne: a sinistra i conti fra le persone, a destra dove
+    // sono andati i soldi. Sul telefono una colonna sola, nello stesso ordine.
+    <div className="grid items-start gap-6 lg:grid-cols-2">
+      <div className="space-y-6">
+        <Card>
+          <ViewerBalance balance={viewerBalance} currency={group.currency} />
+          <ButtonLink
+            href={`/gruppi/${group.id}/saldi`}
+            variant="secondary"
+            className="mt-4 w-full"
+          >
+            Registra un rimborso
+          </ButtonLink>
+        </Card>
 
-      <Card title="Saldi dei membri">
-        <BalanceTable balances={balances} currency={group.currency} />
-      </Card>
+        <Card
+          title="Da saldare"
+          description="Il numero minimo di pagamenti per pareggiare i conti di tutti."
+        >
+          <DebtList debts={debts} currency={group.currency} viewerId={group.viewer.id} />
+        </Card>
 
-      <Card
-        title="Spese per categoria"
-        description="Quanto ha speso il gruppo, rimborsi esclusi."
-        flush
-      >
-        <CategoryTotals
-          groupId={group.id}
-          currency={group.currency}
-          period={period}
-          breakdown={categoryBreakdown(categoryTotals)}
-        />
-      </Card>
+        <Card title="Saldi dei membri">
+          <BalanceTable balances={balances} currency={group.currency} />
+        </Card>
+      </div>
 
-      <Card title="Ultime spese" flush>
-        <ExpenseList expenses={expenses} currency={group.currency} groupId={group.id} />
-      </Card>
+      <div className="space-y-6">
+        <Card
+          title="Spese per categoria"
+          description="Quanto ha speso il gruppo, rimborsi esclusi."
+          flush
+        >
+          <CategoryTotals
+            groupId={group.id}
+            currency={group.currency}
+            period={period}
+            breakdown={categoryBreakdown(categoryTotals)}
+          />
+        </Card>
+
+        <Card title="Ultime spese" flush>
+          <ExpenseList expenses={expenses} currency={group.currency} groupId={group.id} />
+        </Card>
+      </div>
     </div>
   );
 }

@@ -60,9 +60,13 @@ Tailwind v4, senza file di configurazione: i temi e le varianti si dichiarano
 in `src/app/globals.css`.
 
 L'aspetto segue le linee guida di iOS: pagina grigia con riquadri arrotondati
-(«inset grouped»), barra di navigazione traslucida, controllo segmentato al
-posto delle schede, blu di sistema per tutto ciò che si tocca, verde e rosso
-solo per il denaro.
+(«inset grouped»), barra di navigazione traslucida, blu di sistema per tutto
+ciò che si tocca, verde e rosso solo per il denaro. Le schede del gruppo
+(`GroupTabs`) hanno due forme: sul telefono una barra fissa in basso con il
+«+» della nuova spesa, da tablet in su il controllo segmentato. La barra porta
+`data-tab-bar`, e `globals.css` lascia per lei spazio in fondo alla pagina.
+Le azioni che si usano di rado vanno in un `Menu` («…» del gruppo, menu
+dell'account), non in altri pulsanti nella testata.
 
 I colori si usano **per il ruolo, non per la tinta**: `bg-surface`,
 `text-label-secondary`, `border-separator`, `text-tint`, `text-positive`. Il
@@ -97,8 +101,8 @@ L'interfaccia è disegnata anche in un file Figma, descritto in
 [docs/figma.md](docs/figma.md): è una copia che segue il codice, e quando si
 cambia un token o un componente condiviso lì c'è scritto cosa riportare.
 
-I componenti condivisi (`Card`, `Field`, `Input`, `Alert`, `Money`, `Chevron`, …)
-stanno in `src/components/ui.tsx`: si riusano invece di ricomporre le stesse
+I componenti condivisi (`Card`, `Field`, `Input`, `Alert`, `Money`, `Avatar`,
+`Chevron`, …) stanno in `src/components/ui.tsx`: si riusano invece di ricomporre le stesse
 classi. La dimensione dei pulsanti è la proprietà `size` (`md`, `sm`), non
 classi di padding passate da fuori: due utility uguali in conflitto le risolve
 l'ordine del foglio di stile, non quello in cui le scrivi.

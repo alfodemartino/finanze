@@ -33,7 +33,7 @@ export default async function BalancesPage({ params }: { params: Promise<{ id: s
           title="Pagamenti suggeriti"
           description="Ogni riga è un pagamento che avvicina il gruppo al pareggio."
         >
-          <DebtList debts={debts} currency={group.currency} />
+          <DebtList debts={debts} currency={group.currency} viewerId={group.viewer.id} />
         </Card>
 
         <Card title="Saldi dei membri">

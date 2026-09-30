@@ -3,7 +3,6 @@ import { currentUser } from "@/lib/auth";
 import { getGroupForUser, listCategoryKeywords, listExpenses } from "@/lib/groups";
 import { expenseSearchText } from "@/lib/search";
 import { buildCategoryHistory, buildDictionary, planCategorization } from "@/lib/categories";
-import { ExpenseForm } from "@/components/forms/ExpenseForm";
 import { ExpenseList } from "@/components/ExpenseList";
 import {
   ExpenseSearch,
@@ -28,10 +27,10 @@ export default async function ExpensesPage({ params }: { params: Promise<{ id: s
     listCategoryKeywords(group.id),
   ]);
 
-  // Lo storico sono già tutte qui, dalla più recente: bastano a insegnare al
-  // form come il gruppo categorizza, e a contare le spese senza categoria che
-  // il pulsante «Categorizza» saprebbe sistemare. Nessuna query in più, a
-  // parte le correzioni del gruppo al dizionario delle parole chiave.
+  // Le spese sono già tutte qui, dalla più recente: bastano a contare quelle
+  // senza categoria che il pulsante «Categorizza» saprebbe sistemare. Nessuna
+  // query in più, a parte le correzioni del gruppo al dizionario delle parole
+  // chiave.
   const dictionary = buildDictionary(keywordOverrides);
   const categoryHistory = buildCategoryHistory(expenses, dictionary);
   const uncategorized = expenses.filter((expense) => !expense.category).length;
@@ -43,53 +42,38 @@ export default async function ExpensesPage({ params }: { params: Promise<{ id: s
   // Solo l'amministratore può correggere il pagatore di una spesa già salvata.
   const canManage = group.viewer.role === "OWNER";
 
+  // Solo lo storico: il form della nuova spesa ha la sua pagina, che si apre
+  // dal «+» o da «Aggiungi una spesa». Qui la prima cosa che si vede sono le
+  // spese già registrate, non una colonna di campi vuoti.
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-      <Card title="Nuova spesa">
-        <ExpenseForm
-          groupId={group.id}
-          currency={group.currency}
-          members={activeMembers.map((member) => ({
-            id: member.id,
-            name: member.name,
-            shareWeight: member.shareWeight,
-            defaultSelected: member.defaultSelected,
-          }))}
-          defaultPayerId={group.viewer.id}
-          categoryHistory={categoryHistory}
-          keywordOverrides={keywordOverrides}
-        />
-      </Card>
-
-      <ExpenseSearch
-        items={expenses.map((expense) => ({
-          id: expense.id,
-          text: expenseSearchText(expense, group.currency),
-        }))}
-      >
-        <Card title="Storico spese" description={<ExpenseSearchSummary />} flush>
-          {recognizable > 0 && (
-            <CategorizeBanner
-              groupId={group.id}
-              uncategorized={uncategorized}
-              recognizable={recognizable}
-            />
-          )}
-          {expenses.length > 0 && <ExpenseSearchField />}
-          <ExpenseList
-            expenses={expenses}
-            currency={group.currency}
+    <ExpenseSearch
+      items={expenses.map((expense) => ({
+        id: expense.id,
+        text: expenseSearchText(expense, group.currency),
+      }))}
+    >
+      <Card title="Storico spese" description={<ExpenseSearchSummary />} flush>
+        {recognizable > 0 && (
+          <CategorizeBanner
             groupId={group.id}
-            editable
-            payerOptions={
-              canManage
-                ? activeMembers.map((member) => ({ id: member.id, name: member.name }))
-                : undefined
-            }
+            uncategorized={uncategorized}
+            recognizable={recognizable}
           />
-          <ExpenseSearchEmpty />
-        </Card>
-      </ExpenseSearch>
-    </div>
+        )}
+        {expenses.length > 0 && <ExpenseSearchField />}
+        <ExpenseList
+          expenses={expenses}
+          currency={group.currency}
+          groupId={group.id}
+          editable
+          payerOptions={
+            canManage
+              ? activeMembers.map((member) => ({ id: member.id, name: member.name }))
+              : undefined
+          }
+        />
+        <ExpenseSearchEmpty />
+      </Card>
+    </ExpenseSearch>
   );
 }

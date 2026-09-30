@@ -50,6 +50,15 @@ const appearance: Record<ExpenseCategory, { Icon: LucideIcon; background: string
   OTHER: { Icon: Shapes, background: "bg-category-other" },
 };
 
+/**
+ * Il fondo del colore di una categoria, per chi lo usa fuori dall'icona: le
+ * barre dei totali. Senza categoria è il grigio delle etichette secondarie, che
+ * a differenza del `bg-fill` del cerchio si vede anche come barra sottile.
+ */
+export function categoryBackground(category: ExpenseCategory | null) {
+  return category ? appearance[category].background : "bg-label-secondary";
+}
+
 const sizes = {
   /* Accanto a una riga dello storico: alta quanto la descrizione e i dettagli. */
   md: { circle: "size-9", glyph: "size-[18px]" },

@@ -117,30 +117,44 @@ export function SkeletonTotals() {
   );
 }
 
-/** Il pulsante piccolo che alcune card hanno nell'intestazione. */
-function SkeletonAction() {
-  return <Skeleton className="h-7 w-40 max-w-full rounded-control" />;
-}
-
 /**
- * L'intestazione del gruppo — ritorno indietro, nome, riga di riepilogo — e il
- * controllo segmentato. Sono nel layout: si vedono così solo quando è il layout
- * stesso a doversi ancora caricare, cioè entrando nel gruppo da fuori.
+ * L'intestazione del gruppo — ritorno indietro, nome, riga di riepilogo — e le
+ * schede. Sono nel layout: si vedono così solo quando è il layout stesso a
+ * doversi ancora caricare, cioè entrando nel gruppo da fuori.
+ *
+ * Le schede hanno due forme come quelle vere: il controllo segmentato da
+ * tablet in su, la barra in basso sul telefono. La barra porta anche
+ * `data-tab-bar`, così la pagina lascia già lo spazio che le servirà.
  */
 export function SkeletonGroupHeader() {
   return (
     <>
-      <div>
-        <Skeleton className="h-4 w-28" />
-        <Skeleton className="mt-2 h-8 w-56 max-w-full" />
-        <Skeleton className="mt-2 h-3.5 w-44 max-w-full" />
+      <div className="flex items-end justify-between gap-3">
+        <div className="min-w-0">
+          <Skeleton className="h-4 w-28" />
+          <Skeleton className="mt-2 h-8 w-56 max-w-full" />
+          <Skeleton className="mt-2 h-3.5 w-44 max-w-full" />
+        </div>
+        <span
+          aria-hidden
+          className="size-11 shrink-0 animate-pulse rounded-full bg-fill motion-reduce:animate-none"
+        />
       </div>
 
       {/* La pista grigia del controllo segmentato, con dentro le quattro voci. */}
-      <div className="flex gap-0.5 rounded-control bg-fill p-0.5 sm:max-w-2xl">
+      <div className="hidden max-w-2xl gap-0.5 rounded-control bg-fill p-0.5 sm:flex">
         {Array.from({ length: 4 }, (_, index) => (
           <Skeleton key={index} className="h-7 flex-1 rounded-[7px]" />
         ))}
+      </div>
+
+      <div
+        data-tab-bar
+        aria-hidden
+        className="fixed inset-x-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-40 flex gap-3 sm:hidden"
+      >
+        <span className="h-16 flex-1 rounded-full bg-surface ring-1 ring-separator" />
+        <span className="size-16 shrink-0 rounded-full bg-fill-strong" />
       </div>
     </>
   );
@@ -153,41 +167,51 @@ export function SkeletonGroupHeader() {
  */
 export function SkeletonOverview() {
   return (
-    <div className="space-y-6">
-      <Card
-        title="Chi deve dare quanto a chi"
-        description="Il numero minimo di pagamenti per pareggiare i conti di tutti."
-        actions={
-          <div className="flex flex-wrap gap-2">
-            <SkeletonAction />
-            <SkeletonAction />
+    <div className="grid items-start gap-6 lg:grid-cols-2">
+      <div className="space-y-6">
+        {/* Il saldo personale: anche la riga sopra il numero è grigia, perché
+            «Devi dare» o «Ti devono» dipende dal segno che sta arrivando. Grigio
+            anche il pulsante: porta alla pagina del gruppo, e qui l'indirizzo
+            non arriva. */}
+        <Card>
+          <Skeleton className="h-3.5 w-24" />
+          <Skeleton className="mt-2 h-10 w-44 max-w-full" />
+          <Skeleton className="mt-3 h-3.5 w-64 max-w-full" />
+          <Skeleton className="mt-4 h-11 w-full rounded-control" />
+        </Card>
+
+        <Card
+          title="Da saldare"
+          description="Il numero minimo di pagamenti per pareggiare i conti di tutti."
+        >
+          <SkeletonLines count={2} />
+        </Card>
+
+        <Card title="Saldi dei membri">
+          <SkeletonLines count={3} />
+        </Card>
+      </div>
+
+      <div className="space-y-6">
+        {/* Il periodo lo sceglie l'indirizzo, che qui non arriva: tocca al
+            grigio anche il controllo con le frecce. Titolo e descrizione
+            restano veri. */}
+        <Card
+          title="Spese per categoria"
+          description="Quanto ha speso il gruppo, rimborsi esclusi."
+          flush
+        >
+          <div className="flex items-center justify-between gap-3 border-b border-separator px-4 py-3.5">
+            <Skeleton className="h-8 w-44 rounded-control" />
+            <Skeleton className="h-5 w-40" />
           </div>
-        }
-      >
-        <SkeletonLines count={2} />
-      </Card>
+          <SkeletonRows count={3} icon />
+        </Card>
 
-      <Card title="Saldi dei membri">
-        <SkeletonLines count={3} />
-      </Card>
-
-      {/* Il periodo lo sceglie l'indirizzo, che qui non arriva: tocca al grigio
-          anche il controllo con le frecce. Titolo e descrizione restano veri. */}
-      <Card
-        title="Spese per categoria"
-        description="Quanto ha speso il gruppo, rimborsi esclusi."
-        flush
-      >
-        <div className="flex items-center justify-between gap-3 border-b border-separator px-4 py-3.5">
-          <Skeleton className="h-8 w-44 rounded-control" />
-          <Skeleton className="h-5 w-40" />
-        </div>
-        <SkeletonRows count={3} icon />
-      </Card>
-
-      <Card title="Ultime spese" flush>
-        <SkeletonRows count={3} icon />
-      </Card>
+        <Card title="Ultime spese" flush>
+          <SkeletonRows count={3} icon />
+        </Card>
+      </div>
     </div>
   );
 }
