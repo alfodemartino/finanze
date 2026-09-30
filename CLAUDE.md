@@ -93,6 +93,10 @@ un token: vale sotto `data-theme="dark"` e, solo quando l'utente non ha scelto,
 con `prefers-color-scheme: dark`. La scelta del tema sta in `src/lib/theme.ts` e
 nel componente `ThemeToggle`.
 
+L'interfaccia è disegnata anche in un file Figma, descritto in
+[docs/figma.md](docs/figma.md): è una copia che segue il codice, e quando si
+cambia un token o un componente condiviso lì c'è scritto cosa riportare.
+
 I componenti condivisi (`Card`, `Field`, `Input`, `Alert`, `Money`, `Chevron`, …)
 stanno in `src/components/ui.tsx`: si riusano invece di ricomporre le stesse
 classi. La dimensione dei pulsanti è la proprietà `size` (`md`, `sm`), non
