@@ -157,7 +157,12 @@ export function SkeletonOverview() {
       <Card
         title="Chi deve dare quanto a chi"
         description="Il numero minimo di pagamenti per pareggiare i conti di tutti."
-        actions={<SkeletonAction />}
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <SkeletonAction />
+            <SkeletonAction />
+          </div>
+        }
       >
         <SkeletonLines count={2} />
       </Card>
@@ -180,7 +185,7 @@ export function SkeletonOverview() {
         <SkeletonRows count={3} icon />
       </Card>
 
-      <Card title="Ultime spese" flush actions={<SkeletonAction />}>
+      <Card title="Ultime spese" flush>
         <SkeletonRows count={3} icon />
       </Card>
     </div>

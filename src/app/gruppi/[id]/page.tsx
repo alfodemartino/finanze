@@ -37,9 +37,14 @@ export default async function GroupOverviewPage({
         title="Chi deve dare quanto a chi"
         description="Il numero minimo di pagamenti per pareggiare i conti di tutti."
         actions={
-          <ButtonLink href={`/gruppi/${group.id}/saldi`} variant="secondary" size="sm">
-            Registra un rimborso
-          </ButtonLink>
+          <div className="flex flex-wrap gap-2">
+            <ButtonLink href={`/gruppi/${group.id}/spese`} size="sm">
+              Aggiungi una spesa
+            </ButtonLink>
+            <ButtonLink href={`/gruppi/${group.id}/saldi`} variant="secondary" size="sm">
+              Registra un rimborso
+            </ButtonLink>
+          </div>
         }
       >
         <DebtList debts={debts} currency={group.currency} />
@@ -62,15 +67,7 @@ export default async function GroupOverviewPage({
         />
       </Card>
 
-      <Card
-        title="Ultime spese"
-        flush
-        actions={
-          <ButtonLink href={`/gruppi/${group.id}/spese`} size="sm">
-            Aggiungi una spesa
-          </ButtonLink>
-        }
-      >
+      <Card title="Ultime spese" flush>
         <ExpenseList expenses={expenses} currency={group.currency} groupId={group.id} />
       </Card>
     </div>
