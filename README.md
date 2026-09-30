@@ -25,6 +25,11 @@ necessari a pareggiare i conti.
   si cambia quando si vuole: ogni correzione diventa il suggerimento della
   volta dopo. Le spese nate senza categoria si sistemano in un colpo con il
   pulsante «Categorizza».
+- **Parole chiave del gruppo** — dalla pagina «Categorie» del gruppo
+  l'amministratore aggiunge parole al dizionario, le sposta da una categoria
+  all'altra o disattiva quelle che sbagliano, senza toccare il codice. Le
+  correzioni valgono solo per quel gruppo; gli altri membri le vedono in sola
+  lettura.
 - **Spese per categoria** — nel Riepilogo del gruppo, quanto si è speso in
   ogni categoria in un mese o in un anno, con la percentuale sul totale e una
   barra per confrontarle a colpo d'occhio. Il periodo si sfoglia con le frecce

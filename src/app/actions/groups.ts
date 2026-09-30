@@ -4,48 +4,17 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { currentUser } from "@/lib/auth";
-import { deleteGroupCascade, generateInviteCode, getGroupForUser } from "@/lib/groups";
+import { deleteGroupCascade, generateInviteCode } from "@/lib/groups";
 import { groupSchema, inviteCodeSchema, memberSchema } from "@/lib/validation";
 import { logEvent } from "@/lib/log";
 import { clientIp } from "@/lib/request-ip";
 import type { ActionState } from "@/lib/action-state";
+import { requireOwner } from "@/lib/group-access";
 
 async function requireUser() {
   const user = await currentUser();
   if (!user) redirect("/login");
   return user;
-}
-
-/**
- * Carica il gruppo e pretende che l'utente ne sia amministratore.
- *
- * Il rifiuto si registra qui e non nei chiamanti: è un punto solo invece di
- * cinque, e i due casi restano distinti — non essere membro del gruppo è una
- * cosa (l'app risponde come se il gruppo non esistesse), esserlo senza essere
- * amministratore è un'altra. `azione` dice quale operazione è stata tentata,
- * altrimenti il log direbbe che qualcuno ha provato qualcosa senza dire cosa.
- */
-async function requireOwner(groupId: string, userId: string, azione: string) {
-  const group = await getGroupForUser(groupId, userId);
-  if (!group) {
-    logEvent("warn", "gruppo_non_accessibile", {
-      gruppo: groupId,
-      utente: userId,
-      azione,
-      ip: await clientIp(),
-    });
-    return null;
-  }
-  if (group.viewer.role !== "OWNER") {
-    logEvent("warn", "permesso_negato", {
-      gruppo: groupId,
-      utente: userId,
-      azione,
-      ip: await clientIp(),
-    });
-    return null;
-  }
-  return group;
 }
 
 export async function createGroupAction(

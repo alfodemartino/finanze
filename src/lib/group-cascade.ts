@@ -15,6 +15,7 @@ export const GROUP_TABLE_REFERENCES = {
   expense: ["group", "member"],
   settlement: ["group", "member"],
   member: ["group"],
+  categoryKeyword: ["group"],
   group: [],
 } as const satisfies Record<string, readonly string[]>;
 
@@ -36,5 +37,6 @@ export const GROUP_CASCADE_ORDER = [
   "expense",
   "settlement",
   "member",
+  "categoryKeyword",
   "group",
 ] as const satisfies readonly GroupTable[];

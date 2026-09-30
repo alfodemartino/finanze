@@ -4,8 +4,13 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { currentUser } from "@/lib/auth";
-import { getGroupForUser, listExpenseCategories } from "@/lib/groups";
-import { buildCategoryHistory, categoryLabel, planCategorization } from "@/lib/categories";
+import { getGroupForUser, listCategoryKeywords, listExpenseCategories } from "@/lib/groups";
+import {
+  buildCategoryHistory,
+  buildDictionary,
+  categoryLabel,
+  planCategorization,
+} from "@/lib/categories";
 import { parseAmountToCents } from "@/lib/money";
 import { computeSplits, SplitError, type SplitParticipant } from "@/lib/split";
 import { categoryFieldSchema, splitModeSchema } from "@/lib/validation";
@@ -231,8 +236,12 @@ export async function categorizeExpensesAction(
   const group = await requireMembership(groupId, "categorizza_spese");
   if (!group) return { error: "Gruppo non trovato." };
 
-  const expenses = await listExpenseCategories(groupId);
-  const plan = planCategorization(expenses, buildCategoryHistory(expenses));
+  const [expenses, overrides] = await Promise.all([
+    listExpenseCategories(groupId),
+    listCategoryKeywords(groupId),
+  ]);
+  const dictionary = buildDictionary(overrides);
+  const plan = planCategorization(expenses, buildCategoryHistory(expenses, dictionary), dictionary);
 
   // Con un piano vuoto (un altro membro ci ha già pensato) la transazione non
   // fa niente, ma le pagine si aggiornano lo stesso e il pulsante sparisce.

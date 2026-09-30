@@ -32,7 +32,9 @@ Il file ha due pagine.
 | 06 · Gruppo · Membri | `/gruppi/[id]/membri` | Vista dell'amministratore: membri modificabili, invito, eliminazione del gruppo |
 | 07 · Gruppo · Riepilogo (scuro) | `/gruppi/[id]` | **Incompleta**, vedi sotto |
 
-Mancano, e vanno aggiunte se servono: la registrazione (`/registrati`), la
+Mancano, e vanno aggiunte se servono: la pagina «Categorie» del gruppo
+(`/gruppi/[id]/categorie`, con le parole chiave e il pulsante «Categorie»
+nell'intestazione del gruppo), la registrazione (`/registrati`), la
 pagina iniziale (`/`), le impalcature di caricamento (`loading.tsx`) e l'overlay
 con lo spinner, gli stati vuoti, i messaggi d'errore e le versioni desktop.
 
@@ -101,10 +103,11 @@ Qualche dettaglio che non si indovina guardando il file:
   rettangolo «Valore»: 278 px è la categoria più alta, le altre in proporzione.
 - Nello **storico modificabile** (schermata 04) categoria e pagatore sono in
   blu con «▾», perché nell'app sono tendine; nel Riepilogo sono testo nero.
-- **Icona categoria** ha 8 delle 14 categorie: spesa alimentare, ristoranti e
+- **Icona categoria** ha 8 delle 19 categorie: spesa alimentare, ristoranti e
   bar, casa, bollette, trasporti, viaggi e vacanze, svago e sport, più «senza
   categoria». Mancano salute, abbigliamento, istruzione, animali, regali, tasse
-  e assicurazioni, altro. Una categoria nuova nel codice vuole anche la sua
+  e assicurazioni, sigarette, figli, cura della persona, tecnologia,
+  beneficenza, altro. Una categoria nuova nel codice vuole anche la sua
   variante qui, con colore e glifo di `CategoryIcon`.
 
 ## Differenze note dall'app

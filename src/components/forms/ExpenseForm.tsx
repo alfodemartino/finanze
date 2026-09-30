@@ -6,7 +6,13 @@ import { emptyActionState } from "@/lib/action-state";
 import { formatCents, parseAmountToCents } from "@/lib/money";
 import { computeSplits, SplitError, type SplitMode } from "@/lib/split";
 import { defaultParticipantIds } from "@/lib/members";
-import { suggestCategory, type CategoryHistory, type ExpenseCategory } from "@/lib/categories";
+import {
+  buildDictionary,
+  suggestCategory,
+  type CategoryHistory,
+  type ExpenseCategory,
+  type KeywordOverride,
+} from "@/lib/categories";
 import { Alert, Checkbox, Field, Input, Select } from "@/components/ui";
 import { SubmitButton } from "@/components/SubmitButton";
 import { CategoryIcon } from "@/components/CategoryIcon";
@@ -31,6 +37,7 @@ export function ExpenseForm({
   members,
   defaultPayerId,
   categoryHistory,
+  keywordOverrides,
 }: {
   groupId: string;
   currency: string;
@@ -38,6 +45,8 @@ export function ExpenseForm({
   defaultPayerId: string;
   /** Come il gruppo ha categorizzato le sue spese: vedi `buildCategoryHistory`. */
   categoryHistory: CategoryHistory;
+  /** Le correzioni del gruppo al dizionario delle parole chiave. */
+  keywordOverrides: KeywordOverride[];
 }) {
   const [state, formAction] = useActionState(createExpenseAction, emptyActionState);
 
@@ -61,9 +70,11 @@ export function ExpenseForm({
     setChosenCategory(null);
   }
 
+  // Il dizionario si prepara una volta, non a ogni tasto.
+  const dictionary = useMemo(() => buildDictionary(keywordOverrides), [keywordOverrides]);
   const suggestedCategory = useMemo(
-    () => suggestCategory(description, categoryHistory),
-    [description, categoryHistory],
+    () => suggestCategory(description, categoryHistory, dictionary),
+    [description, categoryHistory, dictionary],
   );
   const category = chosenCategory ?? suggestedCategory ?? "";
 

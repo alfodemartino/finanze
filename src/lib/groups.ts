@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { computeBalances, simplifyDebts } from "@/lib/balances";
 import { buildOverview, type CurrencyOverview, type OverviewGroupInput } from "@/lib/overview";
 import { GROUP_CASCADE_ORDER, type GroupTable } from "@/lib/group-cascade";
+import type { KeywordOverride } from "@/lib/categories";
 
 /** Codice di invito leggibile, senza caratteri ambigui (0/O, 1/I). */
 export function generateInviteCode(length = 7): string {
@@ -232,6 +233,18 @@ export async function listExpenseCategories(groupId: string) {
   });
 }
 
+/**
+ * Le correzioni del gruppo al dizionario delle parole chiave, da passare a
+ * `buildDictionary`. Per quasi tutti i gruppi è un elenco vuoto o corto.
+ */
+export async function listCategoryKeywords(groupId: string): Promise<KeywordOverride[]> {
+  return prisma.categoryKeyword.findMany({
+    where: { groupId },
+    select: { keyword: true, category: true },
+    orderBy: { createdAt: "asc" },
+  });
+}
+
 /** Rimborsi registrati nel gruppo, dal più recente. */
 export async function listSettlements(groupId: string, take = 50) {
   return prisma.settlement.findMany({
@@ -303,6 +316,7 @@ export async function deleteGroupCascade(groupId: string) {
     expense: () => prisma.expense.deleteMany({ where: { groupId } }),
     settlement: () => prisma.settlement.deleteMany({ where: { groupId } }),
     member: () => prisma.member.deleteMany({ where: { groupId } }),
+    categoryKeyword: () => prisma.categoryKeyword.deleteMany({ where: { groupId } }),
     group: () => prisma.group.delete({ where: { id: groupId } }),
   };
 
