@@ -7,6 +7,11 @@ import { normalizeForSearch } from "@/lib/text";
  * (un test verifica che coincidano). Qui ci sono etichette e parole chiave;
  * icone e colori, che sono interfaccia, stanno in `CategoryIcon`.
  *
+ * Le parole chiave di questo file sono il dizionario di base. Ogni gruppo può
+ * correggerlo — aggiungere una parola, spostarla, disattivarla — e le sue
+ * correzioni stanno nella tabella `CategoryKeyword`: `buildDictionary` le
+ * applica alla base.
+ *
  * Tutto è puro e gira anche nel browser: il form della nuova spesa propone la
  * categoria mentre si scrive, senza andare e tornare dal server.
  */
@@ -25,6 +30,11 @@ export const CATEGORY_IDS = [
   "PETS",
   "GIFTS",
   "TAXES",
+  "SMOKING",
+  "CHILDREN",
+  "PERSONAL_CARE",
+  "TECHNOLOGY",
+  "CHARITY",
   "OTHER",
 ] as const;
 
@@ -53,7 +63,7 @@ export const CATEGORIES: Record<ExpenseCategory, CategoryDefinition> = {
       "supermercato", "supermarket", "ipermercato", "iper", "discount", "alimentari",
       "conad", "coop", "ipercoop", "esselunga", "carrefour", "lidl", "eurospin", "penny",
       "aldi", "pam", "despar", "eurospar", "interspar", "crai", "sigma", "famila", "todis",
-      "bennet", "iperal", "tigota", "naturasi",
+      "bennet", "iperal", "naturasi",
       "macelleria", "salumeria", "pescheria", "panificio", "panetteria", "pane",
       "fruttivendolo", "ortofrutta", "frutta", "verdura", "mercato", "detersivi",
     ],
@@ -170,6 +180,48 @@ export const CATEGORIES: Record<ExpenseCategory, CategoryDefinition> = {
       "assicurazion*", "polizza", "rc auto",
     ],
   },
+  SMOKING: {
+    label: "Sigarette",
+    // Niente «tabacchi» né «tabaccheria»: dal tabaccaio si pagano anche bollo,
+    // ricariche e francobolli.
+    keywords: [
+      "sigarett*", "tabacco", "trinciato", "cartine", "iqos", "heets", "terea", "svapo",
+      "liquidi svapo",
+    ],
+  },
+  CHILDREN: {
+    label: "Figli",
+    keywords: [
+      "pannolin*", "babysitter", "baby sitter", "giocattol*", "passeggino", "seggiolino",
+      "omogeneizzat*", "latte in polvere", "ludoteca", "prenatal",
+    ],
+  },
+  PERSONAL_CARE: {
+    label: "Cura della persona",
+    keywords: [
+      "parrucchier*", "barbiere", "estetista", "centro estetico", "manicure", "pedicure",
+      "ceretta", "profumeria", "profumo", "cosmetic*", "sephora", "douglas", "kiko",
+      "tigota", "acqua e sapone", "shampoo", "bagnoschiuma", "dentifricio", "deodorante",
+      "rasoio",
+    ],
+  },
+  TECHNOLOGY: {
+    label: "Tecnologia",
+    keywords: [
+      "elettronica", "mediaworld", "unieuro", "euronics", "trony", "computer", "pc",
+      "notebook", "tablet", "ipad", "iphone", "smartphone", "cuffie", "auricolari",
+      "stampante", "cartucce", "toner", "caricabatterie", "hard disk", "apple store",
+      "icloud", "google one", "microsoft 365",
+    ],
+  },
+  CHARITY: {
+    label: "Beneficenza",
+    // Niente «offerta», che più spesso è un'offerta speciale.
+    keywords: [
+      "beneficenza", "donazion*", "raccolta fondi", "onlus", "unicef", "emergency",
+      "telethon", "airc", "caritas", "gofundme",
+    ],
+  },
   OTHER: {
     label: "Altro",
     keywords: [],
@@ -192,16 +244,120 @@ export function normalizeDescription(text: string): string {
     .trim();
 }
 
-type CompiledKeyword = { category: ExpenseCategory; text: string; prefix: boolean };
-
-function compile(category: ExpenseCategory, keyword: string): CompiledKeyword {
-  const prefix = keyword.endsWith("*");
-  return { category, text: normalizeDescription(keyword), prefix };
+/**
+ * La forma in cui una parola chiave si salva e si confronta: normalizzata come
+ * le descrizioni, con l'asterisco finale se c'era. «Pizz*» e «pizz *» sono la
+ * stessa parola, «pizz» un'altra.
+ */
+export function keywordKey(keyword: string): string {
+  const text = normalizeDescription(keyword);
+  return text && keyword.trim().endsWith("*") ? `${text}*` : text;
 }
 
-// Si preparano una volta sola: il form le riusa a ogni tasto.
-const KEYWORDS = CATEGORY_IDS.flatMap((id) => CATEGORIES[id].keywords.map((k) => compile(id, k)));
-const GENERIC = CATEGORY_IDS.flatMap((id) => (CATEGORIES[id].generic ?? []).map((k) => compile(id, k)));
+/** Come un gruppo corregge una parola: vedi il modello `CategoryKeyword`. */
+export type KeywordOverride = { keyword: string; category: ExpenseCategory | null };
+
+type BaseKeyword = { key: string; text: string; category: ExpenseCategory; generic: boolean };
+
+const BASE_KEYWORDS: BaseKeyword[] = CATEGORY_IDS.flatMap((id) => [
+  ...CATEGORIES[id].keywords.map((text) => ({ key: keywordKey(text), text, category: id, generic: false })),
+  ...(CATEGORIES[id].generic ?? []).map((text) => ({
+    key: keywordKey(text),
+    text,
+    category: id,
+    generic: true,
+  })),
+]);
+
+const BASE_BY_KEY = new Map(BASE_KEYWORDS.map((base) => [base.key, base]));
+
+/** La categoria in cui il dizionario di base mette una parola, se c'è. */
+export function baseKeywordCategory(keyword: string): ExpenseCategory | null {
+  return BASE_BY_KEY.get(keywordKey(keyword))?.category ?? null;
+}
+
+type CompiledKeyword = { category: ExpenseCategory; text: string; prefix: boolean };
+
+function compile(category: ExpenseCategory, key: string): CompiledKeyword {
+  return { category, text: normalizeDescription(key), prefix: key.endsWith("*") };
+}
+
+/** Le parole chiave pronte per il confronto: vedi `buildDictionary`. */
+export type CategoryDictionary = { keywords: CompiledKeyword[]; generic: CompiledKeyword[] };
+
+/**
+ * Il dizionario di un gruppo: la base, meno le parole che il gruppo ha
+ * corretto, più quelle a cui ha dato una categoria. Una parola spostata da una
+ * categoria all'altra perde anche l'eventuale natura di parola generica: è il
+ * gruppo ad averla indicata, e vale quanto le altre.
+ *
+ * Va preparato una volta sola e poi riusato: il form lo interroga a ogni tasto.
+ */
+export function buildDictionary(overrides: KeywordOverride[] = []): CategoryDictionary {
+  const overridden = new Map(overrides.map((o) => [keywordKey(o.keyword), o.category]));
+  const dictionary: CategoryDictionary = { keywords: [], generic: [] };
+
+  for (const base of BASE_KEYWORDS) {
+    if (overridden.has(base.key)) continue;
+    (base.generic ? dictionary.generic : dictionary.keywords).push(compile(base.category, base.key));
+  }
+  for (const [key, category] of overridden) {
+    if (key && category) dictionary.keywords.push(compile(category, key));
+  }
+  return dictionary;
+}
+
+const BASE_DICTIONARY = buildDictionary();
+
+/** Una parola chiave in vigore in un gruppo, com'è arrivata lì. */
+export type KeywordEntry = {
+  key: string;
+  /** Come mostrarla: le parole di base come sono scritte qui («caffè», «b&b»). */
+  text: string;
+  /** Dal dizionario di base, aggiunta dal gruppo, o spostata da `from`. */
+  origin: "base" | "added" | "moved";
+  from?: ExpenseCategory;
+};
+
+/**
+ * Le parole chiave di un gruppo come le mostra la pagina delle categorie: per
+ * ogni categoria quelle in vigore, in ordine alfabetico, e a parte le parole
+ * di base che il gruppo ha disattivato.
+ */
+export function describeKeywords(overrides: KeywordOverride[]): {
+  byCategory: Record<ExpenseCategory, KeywordEntry[]>;
+  disabled: { key: string; text: string; category: ExpenseCategory }[];
+} {
+  const overridden = new Map(overrides.map((o) => [keywordKey(o.keyword), o.category]));
+  const byCategory = Object.fromEntries(CATEGORY_IDS.map((id) => [id, []])) as unknown as Record<
+    ExpenseCategory,
+    KeywordEntry[]
+  >;
+  const disabled: { key: string; text: string; category: ExpenseCategory }[] = [];
+
+  for (const base of BASE_KEYWORDS) {
+    if (!overridden.has(base.key)) {
+      byCategory[base.category].push({ key: base.key, text: base.text, origin: "base" });
+    }
+  }
+  for (const [key, category] of overridden) {
+    const base = BASE_BY_KEY.get(key);
+    if (category) {
+      byCategory[category].push(
+        base
+          ? { key, text: base.text, origin: "moved", from: base.category }
+          : { key, text: key, origin: "added" },
+      );
+    } else if (base) {
+      disabled.push({ key, text: base.text, category: base.category });
+    }
+  }
+
+  const byKey = (a: { text: string }, b: { text: string }) => a.text.localeCompare(b.text, "it");
+  for (const id of CATEGORY_IDS) byCategory[id].sort(byKey);
+  disabled.sort(byKey);
+  return { byCategory, disabled };
+}
 
 /**
  * La categoria indicata dalla parola chiave più lunga: la più specifica. In
@@ -224,9 +380,12 @@ function bestMatch(padded: string, keywords: CompiledKeyword[]): ExpenseCategory
  * Le parole generiche contano solo se non c'è altro: «Spesa» da sola è la
  * spesa alimentare, «Spesa farmacia» è salute.
  */
-export function keywordCategory(description: string): ExpenseCategory | null {
+export function keywordCategory(
+  description: string,
+  dictionary: CategoryDictionary = BASE_DICTIONARY,
+): ExpenseCategory | null {
   const padded = ` ${normalizeDescription(description)} `;
-  return bestMatch(padded, KEYWORDS) ?? bestMatch(padded, GENERIC);
+  return bestMatch(padded, dictionary.keywords) ?? bestMatch(padded, dictionary.generic);
 }
 
 /**
@@ -250,6 +409,7 @@ export function historyKey(description: string): string {
  */
 export function buildCategoryHistory(
   expenses: { description: string; category: ExpenseCategory | null }[],
+  dictionary: CategoryDictionary = BASE_DICTIONARY,
 ): CategoryHistory {
   const history: CategoryHistory = {};
   const seen = new Set<string>();
@@ -259,7 +419,7 @@ export function buildCategoryHistory(
     const key = historyKey(expense.description);
     if (!key || seen.has(key)) continue;
     seen.add(key);
-    if (keywordCategory(expense.description) !== expense.category) {
+    if (keywordCategory(expense.description, dictionary) !== expense.category) {
       history[key] = expense.category;
     }
   }
@@ -274,12 +434,13 @@ export function buildCategoryHistory(
 export function suggestCategory(
   description: string,
   history: CategoryHistory = {},
+  dictionary: CategoryDictionary = BASE_DICTIONARY,
 ): ExpenseCategory | null {
   const key = historyKey(description);
   // `Object.hasOwn`, non `history[key]`: una descrizione come «constructor»
   // troverebbe le proprietà che ogni oggetto eredita.
   if (key && Object.hasOwn(history, key)) return history[key];
-  return keywordCategory(description);
+  return keywordCategory(description, dictionary);
 }
 
 /**
@@ -290,11 +451,12 @@ export function suggestCategory(
 export function planCategorization(
   expenses: { id: string; description: string; category: ExpenseCategory | null }[],
   history: CategoryHistory,
+  dictionary: CategoryDictionary = BASE_DICTIONARY,
 ): { category: ExpenseCategory; expenseIds: string[] }[] {
   const byCategory = new Map<ExpenseCategory, string[]>();
   for (const expense of expenses) {
     if (expense.category) continue;
-    const category = suggestCategory(expense.description, history);
+    const category = suggestCategory(expense.description, history, dictionary);
     if (!category) continue;
     const ids = byCategory.get(category);
     if (ids) ids.push(expense.id);

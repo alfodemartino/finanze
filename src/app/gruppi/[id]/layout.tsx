@@ -4,7 +4,7 @@ import { currentUser } from "@/lib/auth";
 import { getGroupExpenseTotal, getGroupForUser } from "@/lib/groups";
 import { formatCents } from "@/lib/money";
 import { GroupTabs } from "@/components/GroupTabs";
-import { buttonClass } from "@/components/ui";
+import { ButtonLink, buttonClass } from "@/components/ui";
 
 export default async function GroupLayout({
   children,
@@ -55,14 +55,20 @@ export default async function GroupLayout({
           </p>
         </div>
 
-        {/* L'export è riservato all'amministratore, come il controllo lato
-            server: chi non lo è non vede nemmeno il pulsante. È un <a> e non
-            un <NavLink> perché il browser deve scaricare un file, non navigare. */}
-        {group.viewer.role === "OWNER" && (
-          <a href={`/gruppi/${group.id}/export`} className={buttonClass("secondary")}>
-            Esporta in Excel
-          </a>
-        )}
+        <div className="flex flex-wrap gap-2">
+          {/* Le parole chiave le vedono tutti: spiegano i suggerimenti del form. */}
+          <ButtonLink href={`/gruppi/${group.id}/categorie`} variant="secondary">
+            Categorie
+          </ButtonLink>
+          {/* L'export è riservato all'amministratore, come il controllo lato
+              server: chi non lo è non vede nemmeno il pulsante. È un <a> e non
+              un <NavLink> perché il browser deve scaricare un file, non navigare. */}
+          {group.viewer.role === "OWNER" && (
+            <a href={`/gruppi/${group.id}/export`} className={buttonClass("secondary")}>
+              Esporta in Excel
+            </a>
+          )}
+        </div>
       </div>
 
       <GroupTabs groupId={group.id} />

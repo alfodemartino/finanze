@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { CATEGORY_IDS } from "@/lib/categories";
+import { CATEGORY_IDS, keywordKey } from "@/lib/categories";
 
 export const credentialsSchema = z.object({
   email: z.string().trim().toLowerCase().email("Indirizzo email non valido."),
@@ -48,3 +48,19 @@ export const categoryFieldSchema = z.union([
   z.literal("").transform(() => null),
   z.enum(CATEGORY_IDS),
 ]);
+
+/**
+ * Una parola chiave scritta dal proprietario del gruppo, già nella forma in cui
+ * si salva (`keywordKey`). Due lettere almeno, tre con l'asterisco: «a*»
+ * troverebbe mezzo vocabolario.
+ */
+export const keywordSchema = z
+  .string()
+  .max(60, "La parola chiave è troppo lunga.")
+  .transform(keywordKey)
+  .refine((key) => key.length > 0, "Scrivi una parola chiave.")
+  .refine((key) => key.replace(/\*$/, "").length <= 40, "La parola chiave è troppo lunga.")
+  .refine(
+    (key) => key.replace(/\*$/, "").length >= (key.endsWith("*") ? 3 : 2),
+    "La parola chiave è troppo corta.",
+  );

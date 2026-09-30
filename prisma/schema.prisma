@@ -81,9 +81,10 @@ model Group {
   inviteCode String   @unique
   createdAt  DateTime @default(now())
 
-  members     Member[]
-  expenses    Expense[]
-  settlements Settlement[]
+  members          Member[]
+  expenses         Expense[]
+  settlements      Settlement[]
+  categoryKeywords CategoryKeyword[]
 }
 
 enum MemberRole {
@@ -134,9 +135,10 @@ enum SplitMode {
   EXACT
 }
 
-/// Di che genere è una spesa. L'elenco è fisso: etichette, icone, colori e
-/// parole chiave del riconoscimento automatico stanno in `src/lib/categories.ts`,
-/// e un test verifica che i due elenchi coincidano.
+/// Di che genere è una spesa. L'elenco è fisso: etichette e parole chiave di
+/// base del riconoscimento automatico stanno in `src/lib/categories.ts`, e un
+/// test verifica che i due elenchi coincidano. Ogni gruppo può correggere le
+/// parole chiave in `CategoryKeyword`, non le categorie.
 enum ExpenseCategory {
   GROCERIES
   RESTAURANTS
@@ -151,6 +153,11 @@ enum ExpenseCategory {
   PETS
   GIFTS
   TAXES
+  SMOKING
+  CHILDREN
+  PERSONAL_CARE
+  TECHNOLOGY
+  CHARITY
   OTHER
 }
 
@@ -173,6 +180,24 @@ model Expense {
   splits ExpenseSplit[]
 
   @@index([groupId, date])
+}
+
+/// Come un gruppo corregge il dizionario di base di `src/lib/categories.ts`.
+/// Con una categoria la parola indica quella: è nuova, oppure è spostata da
+/// un'altra categoria. Senza categoria una parola del dizionario di base è
+/// disattivata per il gruppo. Le parole del dizionario che il gruppo non tocca
+/// non hanno una riga: qui ci sono solo le differenze.
+model CategoryKeyword {
+  id        String           @id @default(cuid())
+  groupId   String
+  /// In forma normalizzata (vedi `keywordKey`), con l'eventuale «*» finale.
+  keyword   String
+  category  ExpenseCategory?
+  createdAt DateTime         @default(now())
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, keyword])
 }
 
 /// Quota di una spesa a carico di un singolo membro.

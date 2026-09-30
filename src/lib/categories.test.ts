@@ -1,13 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { ExpenseCategory as PrismaExpenseCategory } from "@prisma/client";
 import {
+  baseKeywordCategory,
   buildCategoryHistory,
+  buildDictionary,
   CATEGORIES,
   CATEGORY_IDS,
   categoryLabel,
+  describeKeywords,
   historyKey,
   keywordCategory,
-  normalizeDescription,
+  keywordKey,
   planCategorization,
   suggestCategory,
   type ExpenseCategory,
@@ -24,7 +27,7 @@ describe("elenco delle categorie", () => {
     for (const id of CATEGORY_IDS) {
       const { keywords, generic = [] } = CATEGORIES[id];
       for (const keyword of [...keywords, ...generic]) {
-        const key = normalizeDescription(keyword) + (keyword.endsWith("*") ? "*" : "");
+        const key = keywordKey(keyword);
         const previous = owner.get(key);
         if (previous && previous !== id) duplicates.push(`${keyword} (${previous}, ${id})`);
         owner.set(key, id);
@@ -63,6 +66,12 @@ describe("keywordCategory", () => {
     ["Veterinario", "PETS"],
     ["Regalo per la maestra", "GIFTS"],
     ["Assicurazione auto", "TAXES"],
+    ["Pacchetto di sigarette", "SMOKING"],
+    ["Pannolini", "CHILDREN"],
+    ["Parrucchiere", "PERSONAL_CARE"],
+    ["Tigotà", "PERSONAL_CARE"],
+    ["Cuffie bluetooth", "TECHNOLOGY"],
+    ["Donazione Telethon", "CHARITY"],
   ])("«%s» → %s", (description, category) => {
     expect(keywordCategory(description)).toBe(category);
   });
@@ -75,7 +84,7 @@ describe("keywordCategory", () => {
 
   it("cerca parole intere, non pezzi di parola", () => {
     expect(keywordCategory("Gasolio")).toBe("TRANSPORT");
-    expect(keywordCategory("Barbiere")).toBeNull();
+    expect(keywordCategory("Barattoli")).toBeNull();
     expect(keywordCategory("Autonoleggio")).toBeNull();
   });
 
@@ -186,5 +195,108 @@ describe("planCategorization", () => {
     const ids = planCategorization(expenses, {}).flatMap((group) => group.expenseIds);
     expect(ids).not.toContain("e");
     expect(ids).not.toContain("d");
+  });
+});
+
+describe("keywordKey", () => {
+  it("normalizza la parola e conserva l'asterisco finale", () => {
+    expect(keywordKey("  Pizz* ")).toBe("pizz*");
+    expect(keywordKey("Caffè")).toBe("caffe");
+    expect(keywordKey("B&B")).toBe("b b");
+    expect(keywordKey("*")).toBe("");
+  });
+});
+
+describe("buildDictionary", () => {
+  it("senza correzioni riconosce come il dizionario di base", () => {
+    const dictionary = buildDictionary([]);
+    expect(keywordCategory("Pizzeria", dictionary)).toBe("RESTAURANTS");
+    expect(keywordCategory("Spesa", dictionary)).toBe("GROCERIES");
+  });
+
+  it("riconosce una parola aggiunta dal gruppo", () => {
+    const dictionary = buildDictionary([{ keyword: "Lezioni di Marco", category: "EDUCATION" }]);
+    expect(keywordCategory("Lezioni di Marco martedì", dictionary)).toBe("EDUCATION");
+    expect(keywordCategory("Lezioni di Marco")).toBeNull();
+  });
+
+  it("accetta l'asterisco anche nelle parole del gruppo", () => {
+    const dictionary = buildDictionary([{ keyword: "salernit*", category: "LEISURE" }]);
+    expect(keywordCategory("Abbonamento Salernitana", dictionary)).toBe("LEISURE");
+  });
+
+  it("non riconosce più una parola di base disattivata", () => {
+    const dictionary = buildDictionary([{ keyword: "bar", category: null }]);
+    expect(keywordCategory("Bar", dictionary)).toBeNull();
+    expect(keywordCategory("Caffè al bar", dictionary)).toBe("RESTAURANTS");
+  });
+
+  it("sposta una parola di base in un'altra categoria", () => {
+    const dictionary = buildDictionary([{ keyword: "Auto", category: "TRAVEL" }]);
+    expect(keywordCategory("Auto", dictionary)).toBe("TRAVEL");
+    // La parola più lunga vince ancora, anche su quelle del gruppo.
+    expect(keywordCategory("Bollo auto", dictionary)).toBe("TAXES");
+  });
+
+  it("disattiva anche una parola generica", () => {
+    const dictionary = buildDictionary([{ keyword: "spesa", category: null }]);
+    expect(keywordCategory("Spesa", dictionary)).toBeNull();
+    expect(keywordCategory("Spesa Conad", dictionary)).toBe("GROCERIES");
+  });
+
+  it("si propaga a storico, suggerimento e categorizzazione", () => {
+    const dictionary = buildDictionary([{ keyword: "palestra", category: "HEALTH" }]);
+    const expenses = [{ id: "a", description: "Palestra", category: "HEALTH" as const }];
+    const history = buildCategoryHistory(expenses, dictionary);
+    // Il dizionario del gruppo dice già HEALTH: lo storico non serve.
+    expect(history).toEqual({});
+    expect(suggestCategory("Palestra", history, dictionary)).toBe("HEALTH");
+    expect(
+      planCategorization([{ id: "b", description: "Palestra", category: null }], history, dictionary),
+    ).toEqual([{ category: "HEALTH", expenseIds: ["b"] }]);
+  });
+});
+
+describe("baseKeywordCategory", () => {
+  it("dice dove il dizionario di base mette una parola", () => {
+    expect(baseKeywordCategory("Pizz*")).toBe("RESTAURANTS");
+    expect(baseKeywordCategory("pizz")).toBeNull();
+    expect(baseKeywordCategory("spesa")).toBe("GROCERIES");
+  });
+});
+
+describe("describeKeywords", () => {
+  it("distingue parole di base, aggiunte, spostate e disattivate", () => {
+    const { byCategory, disabled } = describeKeywords([
+      { keyword: "lezioni di marco", category: "EDUCATION" },
+      { keyword: "auto", category: "TRAVEL" },
+      { keyword: "bar", category: null },
+      { keyword: "parola inesistente", category: null },
+    ]);
+    expect(byCategory.EDUCATION).toContainEqual({
+      key: "lezioni di marco",
+      text: "lezioni di marco",
+      origin: "added",
+    });
+    expect(byCategory.TRAVEL).toContainEqual({
+      key: "auto",
+      text: "auto",
+      origin: "moved",
+      from: "TRANSPORT",
+    });
+    expect(byCategory.TRANSPORT.map((entry) => entry.key)).not.toContain("auto");
+    expect(byCategory.RESTAURANTS.map((entry) => entry.key)).not.toContain("bar");
+    expect(disabled).toEqual([{ key: "bar", text: "bar", category: "RESTAURANTS" }]);
+  });
+
+  it("mostra le parole di base come sono scritte nel dizionario", () => {
+    const texts = describeKeywords([]).byCategory.RESTAURANTS.map((entry) => entry.text);
+    expect(texts).toContain("caffè");
+  });
+
+  it("mette le parole in ordine alfabetico", () => {
+    const keys = describeKeywords([]).byCategory.GIFTS.map((entry) => entry.text);
+    expect(keys).toEqual([...keys].sort((a, b) => a.localeCompare(b, "it")));
+    expect(describeKeywords([]).byCategory.OTHER).toEqual([]);
   });
 });

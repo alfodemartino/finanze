@@ -169,6 +169,11 @@ html[data-theme="dark"] {
   --color-category-pets: var(--ui-cat-brown);
   --color-category-gifts: var(--ui-cat-yellow);
   --color-category-taxes: var(--ui-cat-gray);
+  --color-category-smoking: var(--ui-cat-brown);
+  --color-category-children: var(--ui-cat-orange);
+  --color-category-personal-care: var(--ui-cat-mint);
+  --color-category-technology: var(--ui-cat-indigo);
+  --color-category-charity: var(--ui-cat-yellow);
   --color-category-other: var(--ui-cat-gray);
 
   /* I due raggi di iOS: i controlli sono più stretti dei riquadri. */
