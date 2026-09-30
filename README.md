@@ -56,8 +56,12 @@ necessari a pareggiare i conti.
   tutte le operazioni, spese e rimborsi in ordine di data: per ognuna la
   categoria, chi ha pagato e a chi. Il foglio porta il nome del gruppo.
 - **Aspetto in stile iOS** — riquadri arrotondati su fondo grigio, barra di
-  navigazione traslucida, controllo segmentato e i colori di sistema di Apple:
-  blu per ciò che si tocca, verde e rosso per crediti e debiti.
+  navigazione traslucida e i colori di sistema di Apple: blu per ciò che si
+  tocca, verde e rosso per crediti e debiti. Dentro un gruppo, sul telefono le
+  schede stanno in una barra in basso con il «+» per aggiungere una spesa; da
+  tablet in su sono un controllo segmentato. In cima al Riepilogo c'è il
+  proprio saldo, e le azioni meno frequenti (categorie, export, tema, uscita)
+  stanno nei menu «…» e dell'account.
 - **Tema chiaro o scuro** — l'interfaccia segue le preferenze del sistema, ma
   dall'intestazione si può forzare il tema chiaro o quello scuro: la scelta
   resta salvata sul browser.

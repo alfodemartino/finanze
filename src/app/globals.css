@@ -217,6 +217,20 @@ body {
   }
 }
 
+/*
+ * Sul telefono le schede del gruppo sono una barra fissa in basso
+ * (`GroupTabs`, `data-tab-bar`) che copre l'ultimo tratto dello schermo. La
+ * pagina allunga il fondo di altrettanto, così scorrendo fino alla fine
+ * l'ultima riga e il piè di pagina tornano visibili sopra la barra.
+ * `:has()` lo decide il CSS: la barra si porta dietro il suo spazio senza che
+ * il layout radice debba sapere in che pagina si trova.
+ */
+@media (width < 40rem) {
+  body:has([data-tab-bar]) {
+    padding-bottom: calc(6rem + env(safe-area-inset-bottom));
+  }
+}
+
 /* Tabelle e blocchi larghi non devono far scorrere la pagina in orizzontale. */
 .scroll-x {
   @apply -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0;

@@ -233,6 +233,55 @@ export function Chevron({ className = "" }: { className?: string }) {
 }
 
 /**
+ * Una voce di `Menu`: link o pulsante a tutta larghezza, alto quanto un dito.
+ * Sta qui e non accanto al menu perché quello è un componente client, e da un
+ * modulo client anche una costante arriva ai componenti server come
+ * riferimento, non come testo.
+ */
+export const menuItemClass =
+  "flex min-h-11 w-full items-center justify-between gap-3 px-4 py-2.5 text-left text-[15px] text-label transition hover:bg-fill";
+
+/** I tre puntini del pulsante «Altre azioni». */
+export function MoreIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className={`size-5 ${className}`}>
+      <circle cx="5" cy="12" r="1.8" />
+      <circle cx="12" cy="12" r="1.8" />
+      <circle cx="19" cy="12" r="1.8" />
+    </svg>
+  );
+}
+
+/**
+ * L'iniziale di una persona in un cerchio neutro. È decorativa: il nome sta
+ * sempre accanto, e il cerchio serve solo a trovarlo prima con l'occhio.
+ * `tint` lo colora di blu quando il cerchio è esso stesso un pulsante.
+ */
+export function Avatar({
+  name,
+  tone = "neutral",
+  className = "",
+}: {
+  name: string;
+  tone?: "neutral" | "tint";
+  className?: string;
+}) {
+  const tones = {
+    neutral: "bg-fill-strong text-label-secondary",
+    tint: "bg-tint/15 text-tint",
+  } as const;
+
+  return (
+    <span
+      aria-hidden
+      className={`flex size-8 shrink-0 items-center justify-center rounded-full text-[13px] font-semibold ${tones[tone]} ${className}`}
+    >
+      {name.trim().charAt(0).toUpperCase()}
+    </span>
+  );
+}
+
+/**
  * Il simbolo dell'app: un euro che una fessura diagonale divide in due, cioè la
  * spesa divisa. Il tratto è `currentColor`, così prende il colore di chi lo
  * contiene ed è giusto sia in chiaro sia in scuro.

@@ -126,6 +126,9 @@ export async function createExpenseAction(
 
   revalidatePath(`/gruppi/${groupId}`);
   revalidatePath(`/gruppi/${groupId}/spese`);
+  // Si resta nella pagina del form: il suo storico delle categorie deve già
+  // conoscere la spesa appena salvata, per suggerirla alla prossima.
+  revalidatePath(`/gruppi/${groupId}/spese/nuova`);
   return { success: "Spesa registrata." };
 }
 

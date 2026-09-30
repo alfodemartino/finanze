@@ -43,7 +43,7 @@ export function ExpenseList({
   payerOptions?: PayerOption[];
 }) {
   if (expenses.length === 0) {
-    return <EmptyState>Nessuna spesa registrata. Aggiungi la prima qui accanto.</EmptyState>;
+    return <EmptyState>Nessuna spesa registrata finora.</EmptyState>;
   }
 
   return (

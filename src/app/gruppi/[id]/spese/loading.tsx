@@ -1,17 +1,11 @@
-import { SkeletonForm, SkeletonPage, SkeletonRows } from "@/components/Skeletons";
+import { SkeletonPage, SkeletonRows } from "@/components/Skeletons";
 import { Card, Skeleton } from "@/components/ui";
 import { ExpenseSearchField } from "@/components/ExpenseSearch";
 
-/** Scheda «Spese»: il modulo della nuova spesa e lo storico accanto. */
+/** Scheda «Spese»: lo storico con la sua ricerca. Il form ha una pagina sua. */
 export default function Loading() {
   return (
-    <SkeletonPage className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-      <Card title="Nuova spesa">
-        {/* Descrizione, categoria, importo, data, chi ha pagato, come si
-            divide, nota. */}
-        <SkeletonForm fields={7} />
-      </Card>
-
+    <SkeletonPage>
       {/* La descrizione della card è un conteggio, quindi tocca anche a lei un
           grigio: senza, all'arrivo dei dati il titolo scivolerebbe in giù. */}
       <Card title="Storico spese" description={<Skeleton className="h-3 w-32" />} flush>

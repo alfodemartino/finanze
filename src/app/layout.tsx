@@ -5,7 +5,8 @@ import { currentUser } from "@/lib/auth";
 import { logoutAction } from "@/app/actions/auth";
 import { SubmitButton } from "@/components/SubmitButton";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { Logo } from "@/components/ui";
+import { Menu } from "@/components/Menu";
+import { Avatar, Logo } from "@/components/ui";
 import { themeInitScript } from "@/lib/theme";
 import "./globals.css";
 
@@ -54,7 +55,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               </NavLink>
 
               <nav className="flex items-center gap-1">
-                <ThemeToggle />
                 {user ? (
                   <>
                     <NavLink
@@ -63,17 +63,34 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                     >
                       I miei gruppi
                     </NavLink>
-                    <span className="hidden text-[15px] text-label-secondary sm:inline">
-                      {user.name ?? user.email}
-                    </span>
-                    <form action={logoutAction}>
-                      <SubmitButton variant="ghost" size="sm" pendingLabel="Esco…">
-                        Esci
-                      </SubmitButton>
-                    </form>
+                    {/* Tema e uscita si usano di rado: stanno nel menu
+                        dell'account, così su un telefono la barra resta su
+                        una riga sola. */}
+                    <Menu
+                      label="Account e tema"
+                      trigger={<Avatar name={user.name ?? user.email ?? "?"} tone="tint" />}
+                      triggerClassName="flex size-11 items-center justify-center rounded-full transition hover:bg-fill"
+                    >
+                      <p className="border-b border-separator px-4 py-3 text-[13px] text-label-secondary">
+                        Accesso come{" "}
+                        <span className="block truncate text-[15px] font-medium text-label">
+                          {user.name ?? user.email}
+                        </span>
+                      </p>
+                      <div className="flex items-center justify-between gap-3 border-b border-separator px-4 py-2.5 text-[15px]">
+                        Tema
+                        <ThemeToggle />
+                      </div>
+                      <form action={logoutAction} className="p-2">
+                        <SubmitButton variant="danger" className="w-full" pendingLabel="Esco…">
+                          Esci
+                        </SubmitButton>
+                      </form>
+                    </Menu>
                   </>
                 ) : (
                   <>
+                    <ThemeToggle />
                     <NavLink
                       href="/login"
                       className="rounded-control px-3 py-1.5 text-[15px] text-tint transition hover:bg-fill"

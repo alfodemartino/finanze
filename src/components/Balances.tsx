@@ -1,6 +1,7 @@
 import type { Debt, MemberBalance } from "@/lib/balances";
 import { formatCents } from "@/lib/money";
-import { EmptyState, Money } from "@/components/ui";
+import { ArrowRight } from "lucide-react";
+import { Avatar, EmptyState, Money } from "@/components/ui";
 
 export function BalanceTable({
   balances,
@@ -57,7 +58,80 @@ export function BalanceTable({
   );
 }
 
-export function DebtList({ debts, currency }: { debts: Debt[]; currency: string }) {
+/**
+ * Il saldo di chi guarda, in grande: è la prima cosa che si vuole sapere
+ * entrando nel gruppo, e prima andava ricavata leggendo le righe dei debiti.
+ * Sotto, i due numeri da cui nasce, perché «in pari» detto da solo non
+ * distingue chi non ha speso niente da chi ha anticipato quanto gli spettava.
+ */
+export function ViewerBalance({
+  balance,
+  currency,
+}: {
+  balance: MemberBalance | undefined;
+  currency: string;
+}) {
+  const netCents = balance?.netCents ?? 0;
+
+  return (
+    <div>
+      <p className="text-[13px] text-label-secondary">
+        {netCents > 0 ? "Ti devono" : netCents < 0 ? "Devi dare" : "Sei in pari"}
+      </p>
+      <p className="mt-1 text-[40px] leading-none font-bold tracking-[-0.02em]">
+        <Money cents={netCents} formatted={formatCents(Math.abs(netCents), currency)} />
+      </p>
+      {balance && (
+        <p className="mt-2.5 text-[13px] text-label-secondary tabular-nums">
+          Hai anticipato {formatCents(balance.paidCents, currency)} · a tuo carico{" "}
+          {formatCents(balance.owedCents, currency)}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/**
+ * La frase di un pagamento suggerito. Quando riguarda chi guarda si parla a
+ * lui — «Devi dare a Bruno», «Carla ti deve dare» — perché sono le righe che
+ * gli chiedono di fare qualcosa.
+ */
+function debtSentence(debt: Debt, viewerId: string | undefined) {
+  if (debt.fromMemberId === viewerId) {
+    return (
+      <>
+        <span className="text-label-secondary">Devi dare a</span>{" "}
+        <span className="font-medium">{debt.toName}</span>
+      </>
+    );
+  }
+  if (debt.toMemberId === viewerId) {
+    return (
+      <>
+        <span className="font-medium">{debt.fromName}</span>{" "}
+        <span className="text-label-secondary">ti deve dare</span>
+      </>
+    );
+  }
+  return (
+    <>
+      <span className="font-medium">{debt.fromName}</span>{" "}
+      <span className="text-label-secondary">deve dare a</span>{" "}
+      <span className="font-medium">{debt.toName}</span>
+    </>
+  );
+}
+
+export function DebtList({
+  debts,
+  currency,
+  viewerId,
+}: {
+  debts: Debt[];
+  currency: string;
+  /** Il membro di chi guarda: le sue righe gli si rivolgono direttamente. */
+  viewerId?: string;
+}) {
   if (debts.length === 0) {
     return <EmptyState>I conti sono in pari: nessuno deve niente a nessuno. 🎉</EmptyState>;
   }
@@ -67,14 +141,19 @@ export function DebtList({ debts, currency }: { debts: Debt[]; currency: string 
       {debts.map((debt) => (
         <li
           key={`${debt.fromMemberId}-${debt.toMemberId}`}
-          className="flex flex-wrap items-center justify-between gap-2 py-2.5 text-[15px] first:pt-0 last:pb-0"
+          className="flex items-center gap-3 py-2.5 text-[15px] first:pt-0 last:pb-0"
         >
-          <span>
-            <span className="font-medium">{debt.fromName}</span>
-            <span className="mx-2 text-label-secondary">deve dare a</span>
-            <span className="font-medium">{debt.toName}</span>
+          {/* Chi dà e chi riceve, con la freccia in mezzo: si legge prima
+              della frase, che resta il dato per chi usa un lettore di schermo. */}
+          <span aria-hidden className="flex shrink-0 items-center gap-1">
+            <Avatar name={debt.fromName} />
+            <ArrowRight strokeWidth={2.5} className="size-3.5 text-label-tertiary" />
+            <Avatar name={debt.toName} />
           </span>
-          <span className="font-semibold tabular-nums">{formatCents(debt.amountCents, currency)}</span>
+          <span className="min-w-0 flex-1">{debtSentence(debt, viewerId)}</span>
+          <span className="font-semibold whitespace-nowrap tabular-nums">
+            {formatCents(debt.amountCents, currency)}
+          </span>
         </li>
       ))}
     </ul>

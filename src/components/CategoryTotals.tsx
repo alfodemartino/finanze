@@ -3,7 +3,7 @@ import { categoryLabel } from "@/lib/categories";
 import { formatCents } from "@/lib/money";
 import type { Period } from "@/lib/periods";
 import { NavLink } from "@/components/NavLink";
-import { CategoryIcon } from "@/components/CategoryIcon";
+import { CategoryIcon, categoryBackground } from "@/components/CategoryIcon";
 import { EmptyState, SegmentedLinks } from "@/components/ui";
 
 function Arrow({ direction }: { direction: "previous" | "next" }) {
@@ -67,10 +67,11 @@ function PeriodNavigator({ period, hrefFor }: { period: Period; hrefFor: (key: s
  * Quanto ha speso il gruppo per categoria in un mese o in un anno. Una riga per
  * categoria, dalla più alta, con una barra lunga in proporzione.
  *
- * Le barre sono di un solo colore neutro: sono una serie sola, e a dire di che
- * categoria si tratta bastano icona e nome. Colorarle per categoria ripeterebbe
- * l'informazione, e le tinte che si ripetono fra categorie confonderebbero.
- * Sono decorative: i numeri sono testo.
+ * Ogni barra ha il colore dell'icona che le sta accanto: la riga si legge come
+ * un pezzo solo, e confrontando le lunghezze l'occhio ritrova la categoria
+ * senza tornare al nome. Due categorie con la stessa tinta restano distinte
+ * dal glifo e dal nome, come nelle icone. Le barre sono decorative: i numeri
+ * sono testo.
  */
 export function CategoryTotals({
   groupId,
@@ -126,9 +127,9 @@ export function CategoryTotals({
                       </span>
                     </span>
                   </div>
-                  <div aria-hidden className="mt-1.5 h-1.5 rounded-full">
+                  <div aria-hidden className="mt-1.5 h-1.5 rounded-full bg-fill">
                     <div
-                      className="h-full min-w-1.5 rounded-full bg-label-secondary"
+                      className={`h-full min-w-1.5 rounded-full ${categoryBackground(row.category)}`}
                       style={{ width: `${row.barRatio * 100}%` }}
                     />
                   </div>
