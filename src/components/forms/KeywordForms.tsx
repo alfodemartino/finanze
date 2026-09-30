@@ -4,7 +4,7 @@ import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 import { saveKeywordAction } from "@/app/actions/categories";
 import { emptyActionState } from "@/lib/action-state";
-import { CATEGORIES, CATEGORY_IDS } from "@/lib/categories";
+import { CATEGORIES, CATEGORY_DISPLAY_ORDER } from "@/lib/categories";
 import { useLoadingWhile } from "@/components/LoadingOverlay";
 import { Alert, Field, Input, Select } from "@/components/ui";
 import { SubmitButton } from "@/components/SubmitButton";
@@ -38,7 +38,7 @@ export function AddKeywordForm({ groupId }: { groupId: string }) {
           <option value="" disabled>
             Scegli una categoria
           </option>
-          {CATEGORY_IDS.map((id) => (
+          {CATEGORY_DISPLAY_ORDER.map((id) => (
             <option key={id} value={id}>
               {CATEGORIES[id].label}
             </option>

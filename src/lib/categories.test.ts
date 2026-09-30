@@ -5,6 +5,7 @@ import {
   buildCategoryHistory,
   buildDictionary,
   CATEGORIES,
+  CATEGORY_DISPLAY_ORDER,
   CATEGORY_IDS,
   categoryLabel,
   describeKeywords,
@@ -34,6 +35,14 @@ describe("elenco delle categorie", () => {
       }
     }
     expect(duplicates).toEqual([]);
+  });
+
+  it("si mostra in ordine alfabetico, con «Altro» in fondo", () => {
+    expect([...CATEGORY_DISPLAY_ORDER].sort()).toEqual([...CATEGORY_IDS].sort());
+    expect(CATEGORY_DISPLAY_ORDER.at(-1)).toBe("OTHER");
+    const labels = CATEGORY_DISPLAY_ORDER.slice(0, -1).map((id) => CATEGORIES[id].label);
+    expect(labels).toEqual([...labels].sort((a, b) => a.localeCompare(b, "it")));
+    expect(labels[0]).toBe("Abbigliamento");
   });
 
   it("chiama «senza categoria» la spesa che non ne ha una", () => {
@@ -185,9 +194,10 @@ describe("planCategorization", () => {
   it("raggruppa per categoria le spese senza categoria che riconosce", () => {
     const history = { "lezioni di marco": "EDUCATION" as const };
     expect(planCategorization(expenses, history)).toEqual([
-      { category: "GROCERIES", expenseIds: ["a", "c"] },
+      // Nell'ordine in cui si mostrano: Bollette, Istruzione, Spesa alimentare.
       { category: "UTILITIES", expenseIds: ["b"] },
       { category: "EDUCATION", expenseIds: ["f"] },
+      { category: "GROCERIES", expenseIds: ["a", "c"] },
     ]);
   });
 

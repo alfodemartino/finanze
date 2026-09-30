@@ -1,5 +1,5 @@
 import { allocateByWeights } from "@/lib/money";
-import { CATEGORY_IDS, type ExpenseCategory } from "@/lib/categories";
+import { CATEGORY_DISPLAY_ORDER, type ExpenseCategory } from "@/lib/categories";
 
 /**
  * Quanto ha speso un gruppo per categoria in un periodo, pronto da mostrare.
@@ -19,7 +19,7 @@ export type CategoryBreakdownRow = CategoryTotal & {
 export type CategoryBreakdown = { totalCents: number; rows: CategoryBreakdownRow[] };
 
 const order = (category: ExpenseCategory | null) =>
-  category === null ? CATEGORY_IDS.length : CATEGORY_IDS.indexOf(category);
+  category === null ? CATEGORY_DISPLAY_ORDER.length : CATEGORY_DISPLAY_ORDER.indexOf(category);
 
 /**
  * Le categorie con spese nel periodo, dalla più alta; «Senza categoria» sempre
