@@ -1,7 +1,12 @@
 import { notFound, redirect } from "next/navigation";
 import { currentUser } from "@/lib/auth";
 import { getGroupForUser, listCategoryKeywords } from "@/lib/groups";
-import { CATEGORIES, CATEGORY_IDS, describeKeywords, type KeywordEntry } from "@/lib/categories";
+import {
+  CATEGORIES,
+  CATEGORY_DISPLAY_ORDER,
+  describeKeywords,
+  type KeywordEntry,
+} from "@/lib/categories";
 import { removeKeywordAction, restoreKeywordAction } from "@/app/actions/categories";
 import { CategoryIcon } from "@/components/CategoryIcon";
 import { AddKeywordForm, FormPending } from "@/components/forms/KeywordForms";
@@ -79,7 +84,7 @@ export default async function CategoriesPage({ params }: { params: Promise<{ id:
         className="lg:row-span-2"
       >
         <ul className="divide-y divide-separator">
-          {CATEGORY_IDS.map((category) => {
+          {CATEGORY_DISPLAY_ORDER.map((category) => {
             const entries = byCategory[category];
             return (
               <li key={category}>

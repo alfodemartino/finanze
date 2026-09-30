@@ -228,6 +228,20 @@ export const CATEGORIES: Record<ExpenseCategory, CategoryDefinition> = {
   },
 };
 
+/**
+ * L'ordine in cui le categorie si mostrano: alfabetico per etichetta, con
+ * «Altro» sempre in fondo perché raccoglie quello che non sta altrove.
+ *
+ * `CATEGORY_IDS` resta com'è: a parità di lunghezza è il suo ordine a decidere
+ * quale parola chiave vince, e cambiarlo cambierebbe i suggerimenti.
+ */
+export const CATEGORY_DISPLAY_ORDER: readonly ExpenseCategory[] = [
+  ...CATEGORY_IDS.filter((id) => id !== "OTHER").sort((a, b) =>
+    CATEGORIES[a].label.localeCompare(CATEGORIES[b].label, "it"),
+  ),
+  "OTHER",
+];
+
 /** L'etichetta da mostrare, anche per una spesa ancora senza categoria. */
 export function categoryLabel(category: ExpenseCategory | null): string {
   return category ? CATEGORIES[category].label : "Senza categoria";
@@ -445,7 +459,7 @@ export function suggestCategory(
 
 /**
  * Le spese senza categoria che si possono categorizzare in automatico,
- * raggruppate per categoria nell'ordine dell'elenco. Quelle con una categoria
+ * raggruppate per categoria nell'ordine in cui si mostrano. Quelle con una categoria
  * non si toccano: potrebbe averla scelta qualcuno.
  */
 export function planCategorization(
@@ -463,7 +477,7 @@ export function planCategorization(
     else byCategory.set(category, [expense.id]);
   }
 
-  return CATEGORY_IDS.filter((id) => byCategory.has(id)).map((category) => ({
+  return CATEGORY_DISPLAY_ORDER.filter((id) => byCategory.has(id)).map((category) => ({
     category,
     expenseIds: byCategory.get(category)!,
   }));

@@ -3,7 +3,7 @@
 import { useActionState, useEffect, useRef, useState } from "react";
 import { categorizeExpensesAction, updateExpenseCategoryAction } from "@/app/actions/expenses";
 import { emptyActionState } from "@/lib/action-state";
-import { CATEGORIES, CATEGORY_IDS, categoryLabel, type ExpenseCategory } from "@/lib/categories";
+import { CATEGORIES, CATEGORY_DISPLAY_ORDER, categoryLabel, type ExpenseCategory } from "@/lib/categories";
 import { useLoadingWhile } from "@/components/LoadingOverlay";
 import { SubmitButton } from "@/components/SubmitButton";
 
@@ -12,7 +12,7 @@ export function CategoryOptions() {
   return (
     <>
       <option value="">{categoryLabel(null)}</option>
-      {CATEGORY_IDS.map((id) => (
+      {CATEGORY_DISPLAY_ORDER.map((id) => (
         <option key={id} value={id}>
           {CATEGORIES[id].label}
         </option>
