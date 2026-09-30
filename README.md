@@ -403,6 +403,7 @@ docker-compose.yml        Servizi sulla macchina di casa (db, app, migrate, back
 deploy.sh                 Rilascio di una nuova versione
 backup-db.sh              Copia del database, lanciata dal timer systemd
 deploy/                   Unit systemd per la copia giornaliera
+docs/figma.md             Il file Figma dell'interfaccia: schermate, token, componenti
 .github/workflows/        Test, typecheck, lint e build a ogni pull request
 .claude/                  Hook che prepara l'ambiente delle sessioni sul web
 ```
