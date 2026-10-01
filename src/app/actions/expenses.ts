@@ -11,8 +11,8 @@ import {
   categoryLabel,
   planCategorization,
 } from "@/lib/categories";
-import { parseAmountToCents } from "@/lib/money";
-import { computeSplits, SplitError, type SplitParticipant } from "@/lib/split";
+import { formatCents, parseAmountToCents } from "@/lib/money";
+import { computeSplits, resplitTotal, SplitError, type SplitParticipant } from "@/lib/split";
 import { categoryFieldSchema, splitModeSchema } from "@/lib/validation";
 import { logEvent } from "@/lib/log";
 import { clientIp } from "@/lib/request-ip";
@@ -179,6 +179,82 @@ export async function updateExpensePayerAction(
   revalidatePath(`/gruppi/${groupId}/spese`);
   revalidatePath(`/gruppi/${groupId}/saldi`);
   return { success: `Ora la spesa risulta pagata da ${payer.name}.` };
+}
+
+/**
+ * Corregge l'importo di una spesa già registrata.
+ *
+ * Il totale e le quote cambiano insieme, nella stessa transazione: la somma
+ * delle quote deve restare il totale, e i saldi del gruppo devono continuare a
+ * sommare a zero. Le quote nuove le calcola `resplitTotal` a partire da quelle
+ * salvate. Come il pagatore lo può fare solo l'amministratore, perché sposta
+ * i saldi.
+ */
+export async function updateExpenseAmountAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const groupId = String(formData.get("groupId") ?? "");
+  const expenseId = String(formData.get("expenseId") ?? "");
+
+  const group = await requireMembership(groupId, "cambia_importo");
+  if (!group) return { error: "Gruppo non trovato." };
+  if (group.viewer.role !== "OWNER") {
+    return { error: "Solo un amministratore può cambiare l'importo." };
+  }
+
+  const amountCents = parseAmountToCents(String(formData.get("amount") ?? ""));
+  if (amountCents === null || amountCents <= 0) {
+    return { error: "Inserisci un importo valido, maggiore di zero." };
+  }
+
+  // Lettura e scrittura nella stessa transazione: le quote nuove partono da
+  // quelle che ci sono adesso, non da quelle di una lettura precedente.
+  const result = await prisma.$transaction(async (tx) => {
+    const expense = await tx.expense.findFirst({
+      where: { id: expenseId, groupId },
+      select: {
+        amountCents: true,
+        splitMode: true,
+        splits: { select: { memberId: true, amountCents: true } },
+      },
+    });
+    if (!expense) return { notFound: true } as const;
+    if (expense.amountCents === amountCents) return { unchanged: true } as const;
+
+    const splits = resplitTotal(amountCents, expense.splitMode, expense.splits);
+    await tx.expense.update({ where: { id: expenseId }, data: { amountCents } });
+    for (const split of splits) {
+      await tx.expenseSplit.update({
+        where: { expenseId_memberId: { expenseId, memberId: split.memberId } },
+        data: { amountCents: split.amountCents },
+      });
+    }
+    return { updated: true } as const;
+  }).catch((error: unknown) => {
+    // Le spese per importi esatti: un limite voluto, da spiegare a chi ci prova.
+    if (error instanceof SplitError) return { error: error.message } as const;
+    throw error;
+  });
+
+  if ("error" in result) return { error: result.error };
+  if ("notFound" in result) {
+    // Il vincolo sul gruppo ha respinto la riga: o la spesa è stata eliminata
+    // nel frattempo, o un id che non appartiene a questo gruppo.
+    logEvent("warn", "riga_non_trovata", {
+      gruppo: groupId,
+      tipo: "spesa",
+      riga: expenseId,
+      azione: "cambia_importo",
+    });
+    return { error: "Spesa non trovata." };
+  }
+  if ("unchanged" in result) return {};
+
+  revalidatePath(`/gruppi/${groupId}`);
+  revalidatePath(`/gruppi/${groupId}/spese`);
+  revalidatePath(`/gruppi/${groupId}/saldi`);
+  return { success: `Importo: ${formatCents(amountCents, group.currency)}.` };
 }
 
 /**

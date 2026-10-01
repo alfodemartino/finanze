@@ -39,7 +39,8 @@ export default async function ExpensesPage({ params }: { params: Promise<{ id: s
     0,
   );
 
-  // Solo l'amministratore può correggere il pagatore di una spesa già salvata.
+  // Solo l'amministratore può correggere pagatore e importo di una spesa già
+  // salvata: sono le due modifiche che spostano i saldi.
   const canManage = group.viewer.role === "OWNER";
 
   // Solo lo storico: il form della nuova spesa ha la sua pagina, che si apre
@@ -71,6 +72,7 @@ export default async function ExpensesPage({ params }: { params: Promise<{ id: s
               ? activeMembers.map((member) => ({ id: member.id, name: member.name }))
               : undefined
           }
+          amountEditable={canManage}
         />
         <ExpenseSearchEmpty />
       </Card>

@@ -121,6 +121,10 @@ Qualche dettaglio che non si indovina guardando il file:
   barre delle categorie hanno il colore della categoria. Vanno ridisegnate,
   con una cornice nuova per «Nuova spesa».
 
+- **Importo modificabile nello storico.** Per l'amministratore l'importo di
+  una spesa divisa in parti uguali o per quote è in blu e, toccato, diventa un
+  campo. La schermata 04 lo mostra ancora nero.
+
 - **Carattere.** L'app usa San Francisco sui dispositivi Apple e il carattere
   di sistema altrove. Figma elenca SF Pro, ma nel file i testi in SF Pro
   restavano invisibili, quindi il file usa **Inter**, che gli somiglia:
