@@ -16,7 +16,11 @@ necessari a pareggiare i conti.
   fuori dalla preselezione e si aggiunge quando serve.
 - **Spese** — descrizione, importo, data, chi ha pagato e come si divide: in
   parti uguali, per quote o con importi esatti. Un'anteprima mostra le quote
-  mentre si compila il form.
+  mentre si compila il form. Dallo storico l'amministratore corregge pagatore e
+  importo con un tocco; con un importo nuovo le quote si ricalcolano fra gli
+  stessi partecipanti, nelle stesse proporzioni. Le spese con importi esatti
+  non si correggono così: le quote le ha scelte chi le ha registrate, e vanno
+  eliminate e registrate di nuovo.
 - **Categorie** — ogni spesa ha una categoria (spesa alimentare, bollette,
   trasporti, …) con la sua icona, un glifo bianco su un cerchio colorato. Il
   form la propone mentre si scrive la descrizione: prima guarda come il gruppo

@@ -62,3 +62,60 @@ export function computeSplits(
     }
   }
 }
+
+/**
+ * Ripartisce un nuovo totale fra i partecipanti di una spesa già salvata,
+ * quando se ne corregge l'importo.
+ *
+ * Le quote si ricavano da quelle salvate, non dai pesi attuali dei membri: se
+ * l'amministratore ha cambiato un peso dopo, la spesa deve restare divisa come
+ * quando è stata registrata.
+ *
+ * - EQUAL: parti uguali fra gli stessi partecipanti. Il centesimo di resto va
+ *   prima a chi l'aveva già, così una correzione non lo sposta senza motivo.
+ * - SHARES: in proporzione alle quote di prima, che sono l'unica traccia dei
+ *   pesi usati allora.
+ * - EXACT: rifiutato. Gli importi li ha scelti chi ha registrato la spesa, e
+ *   indovinare come cambiano con il totale vorrebbe dire spostare denaro fra i
+ *   membri senza che nessuno l'abbia deciso.
+ */
+export function resplitTotal(
+  totalCents: number,
+  mode: SplitMode,
+  previous: ComputedSplit[],
+): ComputedSplit[] {
+  if (previous.length === 0) {
+    throw new SplitError("Serve almeno un partecipante alla spesa.");
+  }
+  if (totalCents <= 0) {
+    throw new SplitError("L'importo della spesa deve essere maggiore di zero.");
+  }
+
+  // A parità di resto `allocateByWeights` premia l'indice più basso: in testa
+  // chi aveva la quota più alta, poi un ordine stabile che non dipende da come
+  // il database ha restituito le righe.
+  const ordered = [...previous].sort(
+    (a, b) => b.amountCents - a.amountCents || a.memberId.localeCompare(b.memberId),
+  );
+
+  switch (mode) {
+    case "EQUAL":
+      return computeSplits(
+        totalCents,
+        "EQUAL",
+        ordered.map(({ memberId }) => ({ memberId })),
+      );
+
+    case "SHARES":
+      return computeSplits(
+        totalCents,
+        "SHARES",
+        ordered.map(({ memberId, amountCents }) => ({ memberId, shareWeight: amountCents })),
+      );
+
+    case "EXACT":
+      throw new SplitError(
+        "Questa spesa è divisa per importi esatti: per cambiarne il totale eliminala e registrala di nuovo.",
+      );
+  }
+}

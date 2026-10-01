@@ -6,6 +6,7 @@ import { CategorySelect } from "@/components/forms/CategoryForms";
 import { ExpenseSearchResult } from "@/components/ExpenseSearch";
 import { DeleteExpenseButton } from "@/components/forms/DeleteButtons";
 import { PayerSelect, type PayerOption } from "@/components/forms/PayerSelect";
+import { AmountEdit } from "@/components/forms/AmountEdit";
 
 const splitModeLabels: Record<string, string> = {
   EQUAL: "parti uguali",
@@ -33,6 +34,7 @@ export function ExpenseList({
   groupId,
   editable = false,
   payerOptions,
+  amountEditable = false,
 }: {
   expenses: ExpenseListItem[];
   currency: string;
@@ -41,6 +43,12 @@ export function ExpenseList({
   editable?: boolean;
   /** Membri fra cui scegliere il pagatore: solo per chi può modificarlo. */
   payerOptions?: PayerOption[];
+  /**
+   * Se l'importo si può correggere: solo per chi può cambiare il pagatore,
+   * perché anche l'importo sposta i saldi. Le spese divise per importi esatti
+   * restano escluse: il server non saprebbe come cambiare le quote.
+   */
+  amountEditable?: boolean;
 }) {
   if (expenses.length === 0) {
     return <EmptyState>Nessuna spesa registrata finora.</EmptyState>;
@@ -56,9 +64,18 @@ export function ExpenseList({
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <span className="text-[17px] font-medium">{expense.description}</span>
-                <span className="text-[17px] font-semibold tabular-nums">
-                  {formatCents(expense.amountCents, currency)}
-                </span>
+                {amountEditable && expense.splitMode !== "EXACT" ? (
+                  <AmountEdit
+                    groupId={groupId}
+                    expenseId={expense.id}
+                    amountCents={expense.amountCents}
+                    currency={currency}
+                  />
+                ) : (
+                  <span className="text-[17px] font-semibold tabular-nums">
+                    {formatCents(expense.amountCents, currency)}
+                  </span>
+                )}
               </div>
 
               <p className="mt-0.5 text-[13px] text-label-secondary">
