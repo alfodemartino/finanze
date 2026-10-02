@@ -40,6 +40,26 @@ if (process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET) {
   );
 }
 
+// I cookie del browser distinguono l'host ma non la porta: finanze (3000) e
+// Ricette (3001) raggiunte dallo stesso indirizzo leggono gli stessi cookie.
+// Con i nomi predefiniti di Auth.js (`authjs.session-token`…) il login su
+// un'app sovrascriverebbe la sessione dell'altra, che non riesce a leggerla
+// (la chiave è diversa) e manda al login. Un prefisso proprio le separa.
+//
+// Il nome è fisso, quindi senza i prefissi `__Secure-`/`__Host-` che Auth.js
+// aggiunge solo in https: l'app si raggiunge sia in http sulla LAN sia in https
+// dal tunnel. Il flag `Secure` resta quello predefinito, deciso dal protocollo
+// di ogni richiesta, perché Auth.js unisce queste voci alle sue.
+const COOKIES: NextAuthConfig["cookies"] = {
+  sessionToken: { name: "finanze.session-token" },
+  callbackUrl: { name: "finanze.callback-url" },
+  csrfToken: { name: "finanze.csrf-token" },
+  pkceCodeVerifier: { name: "finanze.pkce.code_verifier" },
+  state: { name: "finanze.state" },
+  nonce: { name: "finanze.nonce" },
+  webauthnChallenge: { name: "finanze.challenge" },
+};
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },
@@ -50,6 +70,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   // raggiunta — l'IP sulla LAN, il dominio pubblico dietro il tunnel — senza
   // doverli elencare uno per uno.
   trustHost: true,
+  cookies: COOKIES,
   providers,
   callbacks: {
     jwt({ token, user }) {
