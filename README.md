@@ -169,20 +169,68 @@ tunnel è attivo — l'indirizzo pubblico.
 
 ### Esporre l'app su internet
 
+Da noi l'app è pubblica su `https://finanze.demasoft.cc`, attraverso un tunnel
+Cloudflare. Il tunnel apre una connessione **in uscita** verso Cloudflare: non
+si aprono porte sul router, e funziona anche con un IP dinamico o sotto CGNAT.
+Il certificato HTTPS lo gestisce Cloudflare.
+
 Il servizio `cloudflared` sta dietro il profilo `public` e resta spento finché
-non serve. Per accenderlo servono un dominio su Cloudflare e un tunnel creato
-da **Zero Trust → Networks → Tunnels**, con un hostname pubblico che punta a
-`http://app:3000`. Poi basta aggiungere al `.env`:
+non serve. Per accenderlo, con il dominio già attivo su Cloudflare:
 
-```
-COMPOSE_PROFILES="public"
-TUNNEL_TOKEN="…"
-AUTH_URL="https://finanze.esempio.it"
-```
+1. **Networking → Tunnels → Create Tunnel**, di tipo *Cloudflared*, con
+   ambiente *Docker*. Del comando proposto serve solo il token (la stringa
+   `eyJ…` dopo `--token`): il comando non va eseguito, il container lo avvia
+   Compose. Se lo si perde, si ritrova aprendo il tunnel e premendo
+   **Add a replica**.
+2. Nel tunnel, scheda **Routes → Add route → Published application**:
+   hostname `finanze` + `demasoft.cc`, percorso vuoto, **Service URL**
+   `http://app:3000`. `app` è il nome del servizio Compose, raggiungibile
+   perché `cloudflared` sta nella stessa rete: `localhost` o l'IP dell'LXC non
+   funzionerebbero. Il record DNS lo crea Cloudflare da solo.
+3. Nel `.env`:
 
-e rilanciare `docker compose up -d`. Il tunnel apre una connessione **in
-uscita** verso Cloudflare: non si aprono porte sul router, e funziona anche con
-un IP dinamico o sotto CGNAT. Il certificato HTTPS lo gestisce Cloudflare.
+   ```
+   COMPOSE_PROFILES="public"
+   TUNNEL_TOKEN="eyJ…"
+   AUTH_URL="https://finanze.demasoft.cc"
+   ```
+
+4. `docker compose up -d --force-recreate app cloudflared`. Il
+   `--force-recreate` garantisce che `app` legga il nuovo `AUTH_URL`; lo si
+   controlla con `docker compose exec app printenv AUTH_URL`.
+
+La verifica, come sempre dall'interno verso l'esterno: `docker compose ps`
+(`app` *healthy*, `cloudflared` *Up*), nei log di `cloudflared` le righe
+«Registered tunnel connection», il tunnel *Healthy* nella dashboard e infine
+l'indirizzo pubblico aperto dal telefono **in rete mobile**, non dal Wi‑Fi di
+casa.
+
+Con il login Google, l'URL di callback da registrare diventa
+`https://finanze.demasoft.cc/api/auth/callback/google`.
+
+Per staccare l'app da internet basta `docker compose stop cloudflared`; per
+farlo in modo stabile si toglie `COMPOSE_PROFILES` dal `.env`, si svuota
+`AUTH_URL` e si rilancia `docker compose up -d --force-recreate app`. Dalla LAN
+resta raggiungibile sulla porta 3000.
+
+#### Cosa resta aperto
+
+Davanti all'app non c'è **Cloudflare Access**: è stata una scelta, per non
+aggiungere un secondo accesso con codice via email. Chiunque arrivi
+all'indirizzo vede quindi la pagina di login, e vanno tenute presenti due cose:
+
+- **la registrazione è aperta**: chiunque può creare un account. Senza un
+  codice di invito non vede nessun gruppo, ma l'account lo crea;
+- **l'app non limita i tentativi di login**: li registra come `login_fallito`
+  (vedi [i log](#log-dellapplicazione)), ma non blocca nessuno.
+
+Se nei log compaiono tentativi da fuori, le strade sono due, entrambe dalla
+dashboard e senza toccare il codice: un'applicazione **Access** self-hosted su
+`finanze.demasoft.cc` con una regola *Allow* sulle email dei familiari e il
+*One-time PIN* come metodo di accesso (da aggiungere prima in **Zero Trust →
+Integrations → Identity providers**), oppure una regola di **rate limiting** sul
+`POST` verso `/login` e `/registrati`. Un'applicazione Access **senza** regole
+non lascia passare nessuno: tutte le richieste vengono rifiutate.
 
 ### Rilasciare una nuova versione
 
