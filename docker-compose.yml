@@ -121,7 +121,8 @@ services:
 
   # Espone l'applicazione su internet senza aprire porte sul router: la
   # connessione parte da qui verso Cloudflare. Richiede `TUNNEL_TOKEN` nel
-  # `.env` e un hostname pubblico configurato che punti a `http://app:3000`.
+  # `.env` e, nel tunnel, una route «Published application» che punti a
+  # `http://app:3000` (vedi README).
   cloudflared:
     image: cloudflare/cloudflared:latest
     command: tunnel --no-autoupdate run
